@@ -6,6 +6,8 @@ import android.support.annotation.NonNull;
 import java.io.FileDescriptor;
 
 public interface AudioPlayer {
+
+
     @IntDef({
             State.IDLE,
             State.PREPARING,
@@ -48,6 +50,8 @@ public interface AudioPlayer {
     void play();
 
     void pause();
+
+    void toPosition(int position);
 
     void stop();
 

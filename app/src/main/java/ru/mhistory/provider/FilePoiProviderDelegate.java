@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 import api.vo.Poi;
+import api.vo.PoiContent;
 import ru.mhistory.geo.LatLng;
 import ru.mhistory.log.Logger;
 
@@ -80,26 +81,48 @@ public abstract class FilePoiProviderDelegate {
         jr.nextString(); // description
         jr.nextName();
         jr.nextInt(); // activationRadius
+        jr.nextName();  //+
+        String strContentType = jr.nextString(); //+
+        boolean contentsFormat = strContentType.equals("mp3");
         jr.nextName(); // points
         jr.beginArray();
 
         while (jr.hasNext()) {
+            long obj_id = 0;  //+
             String name = "";
-            String desc = "";
+            String type = "";  //+
+            // -    String desc = "";
+            String full_name = ""; //+
+            String full_address = ""; //+
+
             double lat = 0;
             double lon = 0;
-            List<String> audioUrls = new ArrayList<>();
+            // -    List<String> audioUrls = new ArrayList<>();
+            List<PoiContent> contents = new ArrayList<>();
             jr.beginObject();
             while (jr.hasNext()) {
+
                 switch (jr.nextName()) {
                     case "trigger":
                         jr.skipValue();
                         break;
+                    case "obj_id":
+                        obj_id = jr.nextLong();
+                        break;
                     case "name":
                         name = jr.nextString();
                         break;
-                    case "description":
-                        desc = jr.nextString();
+//                    case "description":
+//                        desc = jr.nextString();
+//                        break;
+                    case "type":
+                        type = jr.nextString();
+                        break;
+                    case "full_name":
+                        full_name = jr.nextString();
+                        break;
+                    case "full_address":
+                        full_address = jr.nextString();
                         break;
                     case "lon":
                         lon = jr.nextDouble();
@@ -107,17 +130,47 @@ public abstract class FilePoiProviderDelegate {
                     case "lat":
                         lat = jr.nextDouble();
                         break;
-                    case "audio":
+//                    case "audio":
+//                        jr.beginArray();
+//                        while (jr.hasNext()) {
+//                            audioUrls.add(jr.nextString());
+//                        }
+//                        jr.endArray();
+//                        break;
+                    case "content":
                         jr.beginArray();
                         while (jr.hasNext()) {
-                            audioUrls.add(jr.nextString());
+                            jr.beginObject();
+                            long contentId = 0;
+                            String contentName = "";
+                            String contentType = "";
+                            String contentAudio = "";
+                            while (jr.hasNext()) {
+                                switch (jr.nextName()) {
+                                    case "id":
+                                        contentId = jr.nextLong();
+                                        break;
+                                    case "name":
+                                        contentName = jr.nextString();
+                                        break;
+                                    case "content_type":
+                                        contentType = jr.nextString();
+                                        break;
+                                    case "audio":
+                                        contentAudio = jr.nextString();
+                                        break;
+                                }
+                            }
+                            jr.endObject();
+                            contents.add(new PoiContent(contentId, contentName, contentType, contentsFormat, contentAudio));
                         }
                         jr.endArray();
                         break;
                 }
             }
             jr.endObject();
-            cache.put(new LatLng(lat, lon), new Poi(name, desc, lon, lat, audioUrls));
+            //     cache.put(new LatLng(lat, lon), new Poi(name, desc, lon, lat, audioUrls));
+            cache.put(new LatLng(lat, lon), new Poi(obj_id, name, type, full_name, full_address, lon, lat, contents));
         }
         jr.endArray();
         jr.endObject();

@@ -214,7 +214,7 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 //        String compoundPoiDesc = String.format("%s\nlon=%s, lat=%s",
 //                poi.desc, poi.longitude, poi.latitude);
 //           fragment.setPoi(compoundPoiDesc);
-        fragment.setPoi(poi.desc);
+        fragment.setPoi(poi.full_name);
         BusProvider.getInstance().post(new PoiFoundEvent(poi));
     }
 
@@ -261,7 +261,12 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         ctx.startService(new Intent(ctx, AudioService.class)
                 .setAction(AudioService.Action.PLAY_OR_PAUSE));
     }
-
+    @UiThread
+    public void playTrackToPosition(int position) {
+        Context ctx = fragment.getActivity();
+        ctx.startService(new Intent(ctx, AudioService.class)
+                .setAction(AudioService.Action.PLAY_TO_POSITION).putExtra(AudioService.KEY_AUDIO_POSITION,position));
+    }
     @UiThread
     public void playNextTrack() {
         Context ctx = fragment.getActivity();
@@ -316,16 +321,16 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     }
 
     private void startPlayingAudioUrlForAvailablePoiIfPossible(@NonNull Poi poi) {
-        if (poi.audioUrls.size() == 0) {
+        if (poi.contents.size() == 0) {
             Logger.d("There are no audio urls for poi (%s)", poi);
             processedPois.add(poi);
             return;
         }
         String audioUrlToPlay = null;
-        int audioUrlCount = poi.audioUrls.size();
+        int audioUrlCount = poi.contents.size();
         int i = 0;
         for (; i < audioUrlCount; i++) {
-            String audioUrl = poi.audioUrls.get(i);
+            String audioUrl = poi.contents.get(i).audio;
             if (!processedAudioUrls.contains(audioUrl)) {
                 audioUrlToPlay = audioUrl;
                 processedAudioUrls.add(audioUrl);

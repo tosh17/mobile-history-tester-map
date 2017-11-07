@@ -32,6 +32,7 @@ import ru.mhistory.log.Logger;
 
 public class AudioService extends Service implements AudioPlayer.Callbacks, AudioFocusable {
     public static final String KEY_AUDIO_URL = "AUDIO_URL";
+    public static final String KEY_AUDIO_POSITION = "AUDIO_POSITION";
     private static final int NOTIFICATION_ID = 1;
 
     @IntDef({
@@ -47,15 +48,18 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
 
     @StringDef({
             Action.PLAY_OR_PAUSE,
+            Action.PLAY_TO_POSITION,
             Action.STOP,
             Action.NEXT,
             Action.URL,
     })
     public @interface Action {
         String PLAY_OR_PAUSE = "ru.mhistory.audioservice.action.PLAY_OR_PAUSE";
+        String PLAY_TO_POSITION = "ru.mhistory.audioservice.action.PLAY_TO_POSITION";
         String STOP = "ru.mhistory.audioservice.action.STOP";
         String NEXT = "ru.mhistory.audioservice.action.NEXT";
         String URL = "ru.mhistory.audioservice.action.URL";
+
     }
 
     private Runnable audioTrackProgressRunnable = new Runnable() {
@@ -128,6 +132,10 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
             case Action.PLAY_OR_PAUSE:
                 onPlayOrPauseAction();
                 break;
+            case Action.PLAY_TO_POSITION:
+                int position = intent.getExtras().getInt(KEY_AUDIO_POSITION);
+                toPosition(position);
+                break;
             case Action.STOP:
                 onStopAction();
                 break;
@@ -185,7 +193,13 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
             releaseResources(false);
         }
     }
+    private void toPosition(int position){
+        if (audioPlayer.getPlaybackState() == AudioPlayer.State.PLAYING || audioPlayer.getPlaybackState() == AudioPlayer.State.PAUSED) {
+            audioPlayer.toPosition(position);
 
+        }
+
+    }
     private void onStopAction() {
         Logger.d("Stop action received...");
         sendPlaybackStopEvent();

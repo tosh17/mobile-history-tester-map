@@ -21,21 +21,25 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.nononsenseapps.filepicker.FilePickerActivity;
 
+import butterknife.BindDrawable;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import butterknife.Unbinder;
 import ru.mhistory.R;
 import ru.mhistory.common.util.PermissionUtils;
 
 import ru.mhistory.screen.map.MapPresenter;
 
-public class DebugInfoFragment extends Fragment {
+public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChangeListener{
     private static final int REQUEST_STORY_PICKER = 0;
     private static final int REQUEST_LOCATION_PERMISSIONS = 100;
     int wDev, hDev;
@@ -67,10 +71,18 @@ public class DebugInfoFragment extends Fragment {
     TextView textViewPlayerTrackInfo;
     @BindView(R.id.seekBarPlayer)
     SeekBar seekBarPlayer;
+    private boolean isSeekBarTouch=false;
     @BindView(R.id.textViewPlayerCurrentTime)
     TextView textViewPlayerCurrentTime;
     @BindView(R.id.textViewPlayerTotalTime)
     TextView textViewPlayerTotalTime;
+    @BindView(R.id.imageViewPausePlay)
+    ImageView imageViewPausePlay;
+    boolean isPlay=false;
+    @BindDrawable(R.drawable.ic_player_pause_button)
+     Drawable pauseDrawable;
+    @BindDrawable(R.drawable.ic_player_play_button)
+     Drawable playDrawable;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -146,6 +158,7 @@ public class DebugInfoFragment extends Fragment {
                         getDimensionPixelSize(R.dimen.nv_track_info_text_size) * 2 / 3));
         //Бегущая строка
         textViewPlayerTrackInfo.setSelected(true);
+        seekBarPlayer.setOnSeekBarChangeListener(this);
     }
 
     private void llsetH(View v, int h) {
@@ -232,6 +245,33 @@ public class DebugInfoFragment extends Fragment {
     public void updateAudioTrackDurationsSeekBar(int position){
         seekBarPlayer.setProgress(position+1);
     }
+
+    @OnClick(R.id.imageViewPausePlay)
+    public void playPauseClicked() {
+        if(isPlay) imageViewPausePlay.setImageDrawable(pauseDrawable);
+        else imageViewPausePlay.setImageDrawable(playDrawable);
+        presenter.playOrPauseTrack();
+        isPlay=!isPlay;
+       }
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+        if(isSeekBarTouch) presenter.playTrackToPosition(i);
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+                isSeekBarTouch=true;
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+        isSeekBarTouch=false;
+
+    }
+//    public void onPoiMinRadiusClicked() {
+//        presenter.onPoiMinRadiusClicked();
+//    }
 
 //    public void updateAudioTrackDurations(@NonNull String totalDurationAsStr,
 //                                          @NonNull String currentDurationAsStr) {
@@ -441,6 +481,8 @@ public class DebugInfoFragment extends Fragment {
         presenter.setStoryFileUri(null);
         //storyFile.setText(R.string.empty_story_file);
     }
+
+
 
 //
 

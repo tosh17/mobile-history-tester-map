@@ -238,9 +238,9 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                 ru.mhistory.geo.LatLng latLng = new ru.mhistory.geo.LatLng(currentPoi.latitude,
                         currentPoi.longitude);
                 MarkerOptions markerOptions = createPoiMarkerOptions(latLng.latitude,
-                        latLng.longitude, currentPoi.name, currentPoi.desc,
+                        latLng.longitude, currentPoi.name, currentPoi.full_name,
                         getAudioIndexCache(latLng),
-                        currentPoi.audioUrls.size());
+                        currentPoi.contents.size());
                 currentPoiMarker = googleMap.addMarker(markerOptions);
                 currentPoiMarker.setTag(latLng);
                 markers.put(latLng, currentPoiMarker);
@@ -254,8 +254,8 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
             LatLng latLng = poiEntry.getKey();
             Poi poi = poiEntry.getValue();
             MarkerOptions markerOptions = createPoiMarkerOptions(latLng.latitude,
-                    latLng.longitude, poi.name, poi.desc, getAudioIndexCache(latLng),
-                    poi.audioUrls.size());
+                    latLng.longitude, poi.name, poi.full_name, getAudioIndexCache(latLng),
+                    poi.contents.size());
             this.markerOptions.put(latLng, markerOptions);
         }
     }
@@ -350,7 +350,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
             int audioIndex = getAudioIndexCache(latLng);
             audioIndex++;
             currentPoiMarker.setTitle(String.format(Locale.getDefault(), "%s; %d/%d",
-                    currentPoi.name, audioIndex, currentPoi.audioUrls.size()));
+                    currentPoi.name, audioIndex, currentPoi.contents.size()));
             audioIndexCache.put(latLng, audioIndex);
             currentPoiMarker.hideInfoWindow();
             currentPoiMarker.showInfoWindow();

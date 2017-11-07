@@ -100,6 +100,13 @@ public class AndroidAudioPlayer implements
         mediaPlayer.pause();
     }
 
+    @Override
+    public void toPosition(int position) {
+        int res = (position * mediaPlayer.getDuration()) / 100;
+        mediaPlayer.seekTo(res);
+
+    }
+
     public void stop() {
         checkState(State.READY, State.PLAYING, State.PAUSED, State.ENDED);
         Logger.d("Stopping %s", mediaPlayer.getTrackInfo());

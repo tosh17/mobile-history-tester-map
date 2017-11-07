@@ -2,26 +2,34 @@ package api.vo;
 
 import android.support.annotation.NonNull;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class Poi {
+
+    public final long objId;  //+
     public final String name;
-    public final String desc;
+    public final String type;  //+
+    public final String full_name; //+
+    public final String full_address; //+
     public final double longitude;
     public final double latitude;
-    public final List<String> audioUrls;
+    public final List<PoiContent> contents;
 
-    public Poi(@NonNull String name,
-               @NonNull String desc,
+    public Poi(long objId,@NonNull String name,
+               @NonNull String type,@NonNull String full_name,@NonNull String full_address,
                double longitude,
                double latitude,
-               @NonNull List<String> audioUrls) {
+               @NonNull List<PoiContent> contents) {
+        this.objId=objId;
         this.name = name;
-        this.desc = desc;
+        this.type=type;
+        this.full_name=full_name;
+        this.full_address=full_address;
         this.longitude = longitude;
         this.latitude = latitude;
-        this.audioUrls = Collections.unmodifiableList(audioUrls);
+        this.contents = Collections.unmodifiableList(contents);
     }
 
     @Override
@@ -53,11 +61,14 @@ public class Poi {
     @Override
     public String toString() {
         return "Poi{" +
+                "id='" + objId + '\'' +
                 "name='" + name + '\'' +
-                ", desc='" + desc + '\'' +
+                "type='" + type + '\'' +
+                ", full_name='" + full_name + '\'' +
+                ", full_address='" + full_address + '\'' +
                 ", longitude=" + longitude +
                 ", latitude=" + latitude +
-                ", audioUrls=" + audioUrls +
+                ", audioSize=" + contents.size() +
                 '}';
     }
 }
