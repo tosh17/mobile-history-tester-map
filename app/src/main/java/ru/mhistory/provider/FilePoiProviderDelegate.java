@@ -10,8 +10,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import api.vo.Poi;
@@ -142,9 +144,10 @@ public abstract class FilePoiProviderDelegate {
                         while (jr.hasNext()) {
                             jr.beginObject();
                             long contentId = 0;
+                            int wow = 0;
                             String contentName = "";
                             String contentType = "";
-                            String contentAudio = "";
+                            Map<String, String> contentAudio = new HashMap<>();
                             while (jr.hasNext()) {
                                 switch (jr.nextName()) {
                                     case "id":
@@ -156,13 +159,33 @@ public abstract class FilePoiProviderDelegate {
                                     case "content_type":
                                         contentType = jr.nextString();
                                         break;
-                                    case "audio":
-                                        contentAudio = jr.nextString();
+                                    case "wow":
+                                        wow = jr.nextInt();
                                         break;
+                                    case "audio":
+                                        jr.beginArray();
+                                        while (jr.hasNext()) {
+                                            jr.beginObject();
+                                            String typeAudio = "";
+                                            String mp3 = "";
+                                            while (jr.hasNext()) {
+                                                switch (jr.nextName()) {
+                                                    case "type":
+                                                        typeAudio = jr.nextString();
+                                                        break;
+                                                    case "mp3":
+                                                        mp3 = jr.nextString();
+                                                        break;
+                                                }
+                                            }
+                                            jr.endObject();
+                                            contentAudio.put(typeAudio, mp3);
+                                        }
+                                        jr.endArray();
                                 }
                             }
                             jr.endObject();
-                            contents.add(new PoiContent(contentId, contentName, contentType, contentsFormat, contentAudio));
+                            contents.add(new PoiContent(contentId, contentName, contentType, wow, contentAudio));
                         }
                         jr.endArray();
                         break;

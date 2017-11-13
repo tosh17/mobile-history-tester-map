@@ -32,6 +32,7 @@ public class Poi {
         this.contents = Collections.unmodifiableList(contents);
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

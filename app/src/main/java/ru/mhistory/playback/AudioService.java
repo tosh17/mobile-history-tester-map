@@ -52,6 +52,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
             Action.STOP,
             Action.NEXT,
             Action.URL,
+            Action.TEXT,
     })
     public @interface Action {
         String PLAY_OR_PAUSE = "ru.mhistory.audioservice.action.PLAY_OR_PAUSE";
@@ -59,6 +60,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         String STOP = "ru.mhistory.audioservice.action.STOP";
         String NEXT = "ru.mhistory.audioservice.action.NEXT";
         String URL = "ru.mhistory.audioservice.action.URL";
+        String TEXT = "ru.mhistory.audioservice.action.TEXT";
 
     }
 
@@ -146,6 +148,12 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 String url = intent.getExtras().getString(KEY_AUDIO_URL);
                 if (!TextUtils.isEmpty(url)) {
                     onAudioTrackUrlAvailable(url);
+                }
+                break;
+            case Action.TEXT:
+                String text = intent.getExtras().getString(KEY_AUDIO_URL);
+                if (!TextUtils.isEmpty(text)) {
+                    onAudioTrackUrlAvailable(text);
                 }
                 break;
         }
@@ -390,7 +398,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         BusProvider.getInstance().post(new TrackProgressEvent(currentDuration, totalDuration));
     }
 
-    private void sendTrackPlaybackEndedEvent() {
+    private void sendTrackPlaybackEndedEvent() { //Конец трека
         BusProvider.getInstance().post(new TrackPlaybackEndedEvent(currentAudioTrackUrl));
     }
 

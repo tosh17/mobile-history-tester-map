@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
@@ -66,6 +67,10 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
 
     @BindView(R.id.textViewTrackInfo)
     TextView textViewTrackInfo;
+    @BindView(R.id.fabPrev)
+    FloatingActionButton fabPrev;
+    @BindView(R.id.fabNext)
+    FloatingActionButton fabNext;
 
     @BindView(R.id.textViewPlayerTrackInfo)
     TextView textViewPlayerTrackInfo;
@@ -219,21 +224,18 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
     }
 
     public void showPlayControl() {
+        imageViewPausePlay.setImageDrawable(playDrawable);
     }
 
     public void showPauseControl() {
+        imageViewPausePlay.setImageDrawable(pauseDrawable);
     }
 
-    public void updateUiOnStartTracking() {
+    public void updateUiOnStartTracking() {       //найден Poi начали воспроизводить
         textViewTrackInfo.setText(R.string.label_location_searching);
         textViewPlayerTrackInfo.setText(R.string.label_location_searching);
 
     }
-//    public void updateUiOnStartTracking() {
-//        poiName.setText(R.string.label_location_searching);
-//        updateButtonBar(LocationNameState.SEARCHING);
-//    }
-
     public void updateUiOnStopTracking() {
     }
 
@@ -242,17 +244,20 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
         textViewPlayerCurrentTime.setText(currentDurationAsStr);
         textViewPlayerTotalTime.setText(totalDurationAsStr);
      }
+
     public void updateAudioTrackDurationsSeekBar(int position){
         seekBarPlayer.setProgress(position+1);
     }
 
+    @OnClick(R.id.fabNext)
+    public void poiNextClicked() {
+        presenter.playOrPauseTrack();
+    }
+
     @OnClick(R.id.imageViewPausePlay)
     public void playPauseClicked() {
-        if(isPlay) imageViewPausePlay.setImageDrawable(pauseDrawable);
-        else imageViewPausePlay.setImageDrawable(playDrawable);
-        presenter.playOrPauseTrack();
-        isPlay=!isPlay;
-       }
+    presenter.playOrPauseTrack();
+     }
 
     @Override
     public void onProgressChanged(SeekBar seekBar, int i, boolean b) {

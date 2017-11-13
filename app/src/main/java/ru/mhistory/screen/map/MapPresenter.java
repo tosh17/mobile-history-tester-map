@@ -61,8 +61,8 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     private static final String[] poiMaxRadiusValues = buildPoiRadiusValues(
             MIN_POI_MAX_RADIUS_M, MAX_POI_MAX_RADIUS_M, POI_MAX_RADIUS_STEP_M);
 
-    private Set<String> processedAudioUrls = new HashSet<>();
-    private Set<Poi> processedPois = new HashSet<>();
+    private Set<String> processedAudioUrls = new HashSet<>();  //прослушаные треки
+    private Set<Poi> processedPois = new HashSet<>();          // прослушаные POI
     private Set<Poi> latestPois = new HashSet<>();
     private final LocationTracker locationTracker;
     private final FilePoiProvider poiProvider;
@@ -327,12 +327,16 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             return;
         }
         String audioUrlToPlay = null;
+        String audioTypeToPlay= null;
         int audioUrlCount = poi.contents.size();
         int i = 0;
         for (; i < audioUrlCount; i++) {
-            String audioUrl = poi.contents.get(i).audio;
+            //TODO: сделать выбор tts or mp3
+            String audioUrl = poi.contents.get(i).getAudioTrack();
+            String audioType = poi.contents.get(i).getAudioType();
             if (!processedAudioUrls.contains(audioUrl)) {
                 audioUrlToPlay = audioUrl;
+                audioTypeToPlay=audioType;
                 processedAudioUrls.add(audioUrl);
                 break;
             }
@@ -343,8 +347,14 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             return;
         }
         Context ctx = fragment.getActivity();
+        if(audioTypeToPlay.equals("mp3")){
         ctx.startService(new Intent(ctx, AudioService.class)
                 .setAction(AudioService.Action.URL)
-                .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay));
+                .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay));}
+                else{
+            ctx.startService(new Intent(ctx, AudioService.class)
+                    .setAction(AudioService.Action.TEXT)
+                    .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay));
+        }
     }
 }
