@@ -3,6 +3,7 @@ package ru.mhistory.playback;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -18,6 +19,7 @@ public class AndroidAudioPlayer implements
 
     private MediaPlayer mediaPlayer;
     private final Callbacks callbacks;
+    private @State int lastState;
     private @State int state = State.IDLE;
 
     public AndroidAudioPlayer(@NonNull Callbacks callbacks) {
@@ -36,6 +38,7 @@ public class AndroidAudioPlayer implements
     @Override
     public void play() {
         checkState(State.READY, State.PAUSED);
+        Log.i("Player", "start play AndroidPlayer");
         state = State.PLAYING;
         mediaPlayer.start();
     }
@@ -139,6 +142,12 @@ public class AndroidAudioPlayer implements
             return mediaPlayer.getCurrentPosition();
         }
         return -1;
+    }
+
+    @Override
+    public void block(boolean isBlock) {
+        if(isBlock) { state=State.BLOCK; lastState=state;}
+        else state=lastState;
     }
 
     private void checkState(@State Integer... expectedStates) {

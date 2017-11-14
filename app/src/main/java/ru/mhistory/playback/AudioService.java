@@ -24,8 +24,8 @@ import ru.mhistory.bus.BusProvider;
 import ru.mhistory.bus.event.CanPauseEvent;
 import ru.mhistory.bus.event.CanPlayEvent;
 import ru.mhistory.bus.event.NextTrackInfoEvent;
-import ru.mhistory.bus.event.TrackPlaybackEndedEvent;
 import ru.mhistory.bus.event.PlaybackStopEvent;
+import ru.mhistory.bus.event.TrackPlaybackEndedEvent;
 import ru.mhistory.bus.event.TrackProgressEvent;
 import ru.mhistory.common.util.FileUtil;
 import ru.mhistory.log.Logger;
@@ -75,10 +75,11 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     private PowerManager.WakeLock powerLock;
     private NotificationManager notificationManager;
     private Notification.Builder notificationBuilder;
-    private AudioPlayer audioPlayer;
+    private AudioPlayer audioPlayer, ttsPlayer;
     private AudioFocusHelper audioFocusHelper;
     private Handler trackProgressHandler;
-    @AudioFocus private int audioFocus;
+    @AudioFocus
+    private int audioFocus;
     private File externalRootDir;
     private String currentAudioTrackUrl;
 
@@ -91,12 +92,21 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     @Override
     public void onCreate() {
         super.onCreate();
+     //   android.os.Debug.waitForDebugger();
         audioPlayer = new AndroidAudioPlayer(this);
+        ttsPlayer = new AndroidTTSPlayer(getBaseContext(), this);
         notificationManager = getNotificationManager();
         audioFocusHelper = new AudioFocusHelper(getApplicationContext(), this);
         trackProgressHandler = new Handler();
         powerLock = getPowerLock();
         externalRootDir = getRootDir();
+    }
+
+    private AudioPlayer getNotBlockPlayer() {
+        if (audioPlayer.getPlaybackState() == AudioPlayer.State.BLOCK)
+            return ttsPlayer;
+        return audioPlayer;
+
     }
 
     @Nullable
@@ -146,13 +156,17 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 break;
             case Action.URL:
                 String url = intent.getExtras().getString(KEY_AUDIO_URL);
+                Logger.i("Player", "intent to mp3-> " + url);
                 if (!TextUtils.isEmpty(url)) {
+                    ttsPlayer.block(true);
                     onAudioTrackUrlAvailable(url);
                 }
                 break;
             case Action.TEXT:
                 String text = intent.getExtras().getString(KEY_AUDIO_URL);
+                Logger.i("Player", "intent to tts-> " + text);
                 if (!TextUtils.isEmpty(text)) {
+                    audioPlayer.block(true);
                     onAudioTrackUrlAvailable(text);
                 }
                 break;
@@ -167,7 +181,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onPlayOrPauseAction() {
-        if (audioPlayer.getPlaybackState() == AudioPlayer.State.PLAYING) {
+        Logger.i("Player", "nPlayOrPauseAction -> " + getNotBlockPlayer().getClass().toString());
+        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING) {
             onPauseAction();
         } else {
             onPlayAction();
@@ -176,11 +191,11 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
 
     private void onPlayAction() {
         Logger.d("Play action received, player state (%s)", audioPlayer.getPlaybackState());
-        if (audioPlayer.getPlaybackState() == AudioPlayer.State.PREPARING) {
+        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PREPARING) {
 //            startPlayingAfterRetrieve = true;
             return;
         }
-        if (audioPlayer.getPlaybackState() == AudioPlayer.State.PAUSED) {
+        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PAUSED) {
             tryToGetAudioFocus();
             setUpAsForeground(FileUtil.getNameFromPath(currentAudioTrackUrl), "playing...");
             configAndStartMediaPlayer();
@@ -188,26 +203,28 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onPauseAction() {
-        Logger.d("Pause action received, player state (%s)", audioPlayer.getPlaybackState());
-        if (audioPlayer.getPlaybackState() == AudioPlayer.State.PREPARING) {
+        Logger.d("Pause action received, player state (%s)", getNotBlockPlayer().getPlaybackState());
+        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PREPARING) {
             // If we are still retrieving media, clear the flag that indicates we should start
             // playing when we're ready
 //            startPlayingAfterRetrieve = false;
             return;
         }
-        if (audioPlayer.getPlaybackState() == AudioPlayer.State.PLAYING) {
-            audioPlayer.pause();
+        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING) {
+            getNotBlockPlayer().pause();
             sendCanPlayEvent();
             releaseResources(false);
         }
     }
-    private void toPosition(int position){
-        if (audioPlayer.getPlaybackState() == AudioPlayer.State.PLAYING || audioPlayer.getPlaybackState() == AudioPlayer.State.PAUSED) {
-            audioPlayer.toPosition(position);
+
+    private void toPosition(int position) {
+        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING || getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PAUSED) {
+            getNotBlockPlayer().toPosition(position);
 
         }
 
     }
+
     private void onStopAction() {
         Logger.d("Stop action received...");
         sendPlaybackStopEvent();
@@ -217,15 +234,15 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onNextAction() {
-        if (audioPlayer.getPlaybackState() == AudioPlayer.State.PLAYING
-                || audioPlayer.getPlaybackState() == AudioPlayer.State.PAUSED) {
+        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING
+                || getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PAUSED) {
             // nothing to do right now
         }
     }
 
     @SuppressLint("SwitchIntDef")
     private void onAudioTrackUrlAvailable(@NonNull String audioTrackUrl) {
-        switch (audioPlayer.getPlaybackState()) {
+        switch (getNotBlockPlayer().getPlaybackState()) {
             case AudioPlayer.State.IDLE:
             case AudioPlayer.State.ENDED:
             case AudioPlayer.State.PAUSED:
@@ -238,6 +255,12 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void playNextTrack(@NonNull String audioTrackUrl) {
+        if (getNotBlockPlayer() == ttsPlayer) {
+            currentAudioTrackUrl = audioTrackUrl;
+            ttsPlayer.prepareAsync(currentAudioTrackUrl);
+            configAndStartMediaPlayer();
+            return;
+        }
         tryToGetAudioFocus();
         if (audioTrackUrl.equals(currentAudioTrackUrl)) {
             setUpAsForeground(FileUtil.getNameFromPath(currentAudioTrackUrl), "playing...");
@@ -280,6 +303,9 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         if (releaseAudioPlayer && audioPlayer != null) {
             audioPlayer.release();
         }
+        if (releaseAudioPlayer && ttsPlayer != null) {
+            ttsPlayer.release();
+        }
         if (releaseAudioPlayer) {
             currentAudioTrackUrl = null;
         }
@@ -313,8 +339,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
             // If we don't have audio focus and can't duck, we have to pause, even if mState
             // is State.Playing. But we stay in the Playing state so that we know we have to resume
             // playback once we get the focus back.
-            if (audioPlayer.getPlaybackState() == AudioPlayer.State.PLAYING) {
-                audioPlayer.pause();
+            if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING) {
+                getNotBlockPlayer().pause();
                 sendCanPlayEvent();
             }
             return;
@@ -323,10 +349,10 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         } else {
 //            mPlayer.setVolume(1.0f, 1.0f);
         }
-        if (audioPlayer.getPlaybackState() == AudioPlayer.State.READY
-                || audioPlayer.getPlaybackState() == AudioPlayer.State.PAUSED) {
+        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.READY
+                || getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PAUSED) {
             startAudioTrackProgress();
-            audioPlayer.play();
+            getNotBlockPlayer().play();
             sendCanPauseEvent();
         }
     }
@@ -362,7 +388,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         updateNotification("playing...");
         startAudioTrackProgress();
         sendNextTrackInfoEvent();
-        audioPlayer.play();
+        getNotBlockPlayer().play();
         sendCanPauseEvent();
     }
 
@@ -371,6 +397,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         Logger.d("Playback is ended for (%s)", currentAudioTrackUrl);
         sendTrackPlaybackEndedEvent();
         releaseResources(true);
+//        ttsPlayer.block(false);
+//        audioPlayer.block(false);
     }
 
     @Override

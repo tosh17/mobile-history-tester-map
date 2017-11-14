@@ -2,6 +2,7 @@ package ru.mhistory.screen.map;
 
 import android.content.Context;
 import android.content.Intent;
+import android.location.Location;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -18,9 +19,10 @@ import api.vo.Poi;
 import api.vo.PoiInfo;
 import ru.mhistory.R;
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.CanPauseEvent;
 import ru.mhistory.bus.event.CanPlayEvent;
+import ru.mhistory.bus.event.NextTrackInfoEvent;
+import ru.mhistory.bus.event.PlaybackStopEvent;
 import ru.mhistory.bus.event.PoiFoundEvent;
 import ru.mhistory.bus.event.ResetTrackingEvent;
 import ru.mhistory.bus.event.SetMaxPoiRadiusEvent;
@@ -28,13 +30,12 @@ import ru.mhistory.bus.event.SetStoryFileEvent;
 import ru.mhistory.bus.event.StartTrackingEvent;
 import ru.mhistory.bus.event.StopTrackingEvent;
 import ru.mhistory.bus.event.TrackPlaybackEndedEvent;
-import ru.mhistory.bus.event.PlaybackStopEvent;
 import ru.mhistory.bus.event.TrackProgressEvent;
 import ru.mhistory.common.util.PermissionUtils;
 import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.common.util.TimeUtil;
-import ru.mhistory.geo.LatLng;
 import ru.mhistory.geo.GoogleApiLocationTracker;
+import ru.mhistory.geo.LatLng;
 import ru.mhistory.geo.LocationTracker;
 import ru.mhistory.log.Logger;
 import ru.mhistory.playback.AudioService;
@@ -46,7 +47,7 @@ import ru.mhistory.provider.UriFileProviderDelegate;
 import ru.mhistory.screen.main.ui.DebugInfoFragment;
 import ru.mhistory.screen.main.ui.widget.NumberPickerDialog;
 
-public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
+public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     private static final int MIN_LOCATION_UPDATE_INTERVAL_SEC = 1;
     private static final int MAX_LOCATION_UPDATE_INTERVAL_SEC = 300;
     private static final int MIN_POI_MIN_RADIUS_M = 100;
@@ -65,6 +66,9 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     private Set<Poi> processedPois = new HashSet<>();          // прослушаные POI
     private Set<Poi> latestPois = new HashSet<>();
     private final LocationTracker locationTracker;
+    private LatLng currentLatLng;  // текущее положение
+    private int currentAngel=0;   //текущий угол
+    private boolean isTracing=false;
     private final FilePoiProvider poiProvider;
     private final PoiProviderConfig poiProviderConfig;
     private DebugInfoFragment fragment;
@@ -170,7 +174,21 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @WorkerThread
     @Override
     public void onLocationChanged(@NonNull final LatLng latLng) {
+        if(!isTracing) currentLatLng=latLng;
+        float[] result=new float[2];
+        Location.distanceBetween(latLng.latitude, latLng.longitude,
+                currentLatLng.latitude, currentLatLng.longitude, result);
+
+        if(result[0]<5 && isTracing ) return;
+        isTracing=true;
+        Logger.i("Map","onLocationChanged "+"lat="+latLng.latitude +":lng"+latLng.longitude + " distance" + result[0] + "; angle"+result[1]);
+        currentLatLng=latLng;
+        //TODO: speed
+        //https://stackoverflow.com/questions/15570542/determining-the-speed-of-a-vehicle-using-gps-in-android
         notifyUiOnLocationChanged(latLng);
+        nextPoiFind(latLng);
+    }
+    private void nextPoiFind(LatLng latLng){
         PoiSearchResult pois = poiProvider.findPois(latLng, latestPois);
         if (pois != null && !pois.isEmpty()) {
             pois.removeAll(processedPois);
@@ -183,8 +201,8 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                 notifyUiOnNearestNonVisitedPoiAvailable(resultPoi.second, resultPoi.first);
             }
         }
-    }
 
+    }
     private void notifyUiOnNearestNonVisitedPoiAvailable(@NonNull final Poi poi,
                                                          @NonNull final PoiInfo poiInfo) {
         ThreadUtil.runOnUiThread(() -> {
@@ -230,7 +248,8 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         Logger.d("Start tracking locations...");
         locationTracker.startTracking();
         fragment.updateUiOnStartTracking();
-        BusProvider.getInstance().post(new StartTrackingEvent());    }
+        BusProvider.getInstance().post(new StartTrackingEvent());
+    }
 
     @UiThread
     public void stopTracking() {
@@ -261,12 +280,14 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         ctx.startService(new Intent(ctx, AudioService.class)
                 .setAction(AudioService.Action.PLAY_OR_PAUSE));
     }
+
     @UiThread
     public void playTrackToPosition(int position) {
         Context ctx = fragment.getActivity();
         ctx.startService(new Intent(ctx, AudioService.class)
-                .setAction(AudioService.Action.PLAY_TO_POSITION).putExtra(AudioService.KEY_AUDIO_POSITION,position));
+                .setAction(AudioService.Action.PLAY_TO_POSITION).putExtra(AudioService.KEY_AUDIO_POSITION, position));
     }
+
     @UiThread
     public void playNextTrack() {
         Context ctx = fragment.getActivity();
@@ -293,7 +314,7 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     public void onUpdateTrackProgressEvent(@NonNull TrackProgressEvent event) {
         fragment.updateAudioTrackDurations(TimeUtil.msToString(event.totalDurationMs),
                 TimeUtil.msToString(event.currentDurationMs));
-        fragment.updateAudioTrackDurationsSeekBar((int) (100*event.currentDurationMs/event.totalDurationMs));
+        fragment.updateAudioTrackDurationsSeekBar((int) (100 * event.currentDurationMs / event.totalDurationMs));
     }
 
     @Subscribe
@@ -310,6 +331,8 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @Subscribe
     public void onTrackPlaybackEndedEvent(@NonNull TrackPlaybackEndedEvent event) {
         Logger.d("Audio track playback completed, name = %s", event.trackName);
+        Logger.i("Player","ended -> "+ event.trackName);
+        nextPoiFind(currentLatLng);
         locationTracker.startTracking();
         fragment.hidePlayerControls();
     }
@@ -327,7 +350,7 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             return;
         }
         String audioUrlToPlay = null;
-        String audioTypeToPlay= null;
+        String audioTypeToPlay = null;
         int audioUrlCount = poi.contents.size();
         int i = 0;
         for (; i < audioUrlCount; i++) {
@@ -336,7 +359,8 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             String audioType = poi.contents.get(i).getAudioType();
             if (!processedAudioUrls.contains(audioUrl)) {
                 audioUrlToPlay = audioUrl;
-                audioTypeToPlay=audioType;
+                audioTypeToPlay = audioType;
+                //TODO: добовлять после того как трек проигран?
                 processedAudioUrls.add(audioUrl);
                 break;
             }
@@ -347,11 +371,11 @@ public class  MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             return;
         }
         Context ctx = fragment.getActivity();
-        if(audioTypeToPlay.equals("mp3")){
-        ctx.startService(new Intent(ctx, AudioService.class)
-                .setAction(AudioService.Action.URL)
-                .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay));}
-                else{
+        if (audioTypeToPlay.equals("mp3")) {
+            ctx.startService(new Intent(ctx, AudioService.class)
+                    .setAction(AudioService.Action.URL)
+                    .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay));
+        } else {
             ctx.startService(new Intent(ctx, AudioService.class)
                     .setAction(AudioService.Action.TEXT)
                     .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay));

@@ -14,7 +14,8 @@ public interface AudioPlayer {
             State.READY,
             State.PLAYING,
             State.PAUSED,
-            State.ENDED
+            State.ENDED,
+            State.BLOCK
     })
     @interface State {
         int IDLE = 0; // player is idle, it's neither prepared or being prepared
@@ -25,6 +26,7 @@ public interface AudioPlayer {
         // so that we know we have to resume playback once we get focus back)
         int PAUSED = 4; // playback paused (media player ready!)
         int ENDED = 5;
+        int BLOCK=-1;
     }
 
     interface Callbacks {
@@ -37,6 +39,7 @@ public interface AudioPlayer {
         void onEnded();
 
         boolean onError();
+        //TODO void onBlock(boolean);
     }
 
     void prepareAsync(@NonNull String url);
@@ -60,4 +63,5 @@ public interface AudioPlayer {
     long getDuration();
 
     long getCurrentPosition();
+    void block(boolean isBlock);
 }

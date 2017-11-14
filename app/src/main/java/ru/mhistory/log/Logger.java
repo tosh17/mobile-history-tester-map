@@ -212,4 +212,8 @@ public class Logger {
     public static void stop() {
         fileLogger.stop();
     }
+
+    public static void i(String Tag,String Str){
+        Log.i("InformTag->"+Tag,Str);
+    }
 }
