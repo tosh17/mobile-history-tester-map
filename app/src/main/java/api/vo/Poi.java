@@ -15,7 +15,8 @@ public class Poi {
     public final String full_address; //+
     public final double longitude;
     public final double latitude;
-    public final List<PoiContent> contents;
+    private final List<PoiContent> contents;
+    private int currentContent=-1;
 
     public Poi(long objId,@NonNull String name,
                @NonNull String type,@NonNull String full_name,@NonNull String full_address,
@@ -72,4 +73,18 @@ public class Poi {
                 ", audioSize=" + contents.size() +
                 '}';
     }
+
+    public PoiContent getNextContent(){
+        //todo добавить wow  локику
+       return contents.get(++currentContent);
+    }
+    public PoiContent getCurrentContent(){
+        //todo добавить wow  локику
+        return contents.get(currentContent);
+    }
+    public boolean isHasNextContent(){
+        return currentContent<contents.size()-1;
+    }
+
+    public int size(){ return contents.size();}
 }

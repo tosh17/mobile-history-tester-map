@@ -12,15 +12,19 @@ import android.support.v4.util.Pair;
 
 import com.squareup.otto.Subscribe;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import api.vo.Poi;
+import api.vo.PoiContent;
 import api.vo.PoiInfo;
 import ru.mhistory.R;
 import ru.mhistory.bus.BusProvider;
 import ru.mhistory.bus.event.CanPauseEvent;
 import ru.mhistory.bus.event.CanPlayEvent;
+import ru.mhistory.bus.event.LoadJsonFromServerEvent;
 import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PlaybackStopEvent;
 import ru.mhistory.bus.event.PoiFoundEvent;
@@ -43,6 +47,8 @@ import ru.mhistory.provider.DefaultPoiFinder;
 import ru.mhistory.provider.FilePoiProvider;
 import ru.mhistory.provider.PoiProviderConfig;
 import ru.mhistory.provider.PoiSearchResult;
+import ru.mhistory.provider.ServerFtpLoader;
+import ru.mhistory.provider.ServerLoaderProvider;
 import ru.mhistory.provider.UriFileProviderDelegate;
 import ru.mhistory.screen.main.ui.DebugInfoFragment;
 import ru.mhistory.screen.main.ui.widget.NumberPickerDialog;
@@ -62,13 +68,13 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     private static final String[] poiMaxRadiusValues = buildPoiRadiusValues(
             MIN_POI_MAX_RADIUS_M, MAX_POI_MAX_RADIUS_M, POI_MAX_RADIUS_STEP_M);
 
-    private Set<String> processedAudioUrls = new HashSet<>();  //прослушаные треки
+    private Set<Long> processedIdContent = new HashSet<>();  //прослушаные треки
     private Set<Poi> processedPois = new HashSet<>();          // прослушаные POI
     private Set<Poi> latestPois = new HashSet<>();
     private final LocationTracker locationTracker;
     private LatLng currentLatLng;  // текущее положение
-    private int currentAngel=0;   //текущий угол
-    private boolean isTracing=false;
+    private int currentAngel = 0;   //текущий угол
+    private boolean isTracing = false;
     private final FilePoiProvider poiProvider;
     private final PoiProviderConfig poiProviderConfig;
     private DebugInfoFragment fragment;
@@ -89,6 +95,31 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         poiProviderConfig = new PoiProviderConfig();
         poiProvider.setProviderConfig(poiProviderConfig);
         locationTracker.setLocationUpdateCallbacks(this);
+        locationTracker.setLocationUpdateIntervalMs(10 * 1000);
+
+    }
+
+    public void loadData(Context context) {
+        //todo заменить имена файлов
+        String tempName = "temp.zip";
+        String jsonName = "34pois.json";
+        ServerLoaderProvider serverLoader = new ServerFtpLoader();
+        File file = new File(context.getFilesDir() + "/" + tempName);
+        serverLoader.load(file, new ServerLoaderProvider.onServerLoadFinish() {
+            @Override
+            public void loadFinished(boolean statusLoad) {
+                try {
+                    serverLoader.unzip(context.getFilesDir().toString() + "/", tempName);
+                    Uri uri = Uri.fromFile(new File(context.getFilesDir() + "/" + jsonName));
+                    //TODO добавить запись в базу
+                    setStoryFileUri(uri);
+                    startTracking();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
     }
 
     @UiThread
@@ -174,21 +205,22 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @WorkerThread
     @Override
     public void onLocationChanged(@NonNull final LatLng latLng) {
-        if(!isTracing) currentLatLng=latLng;
-        float[] result=new float[2];
+        if (!isTracing) currentLatLng = latLng;
+        float[] result = new float[2];
         Location.distanceBetween(latLng.latitude, latLng.longitude,
                 currentLatLng.latitude, currentLatLng.longitude, result);
 
-        if(result[0]<5 && isTracing ) return;
-        isTracing=true;
-        Logger.i("Map","onLocationChanged "+"lat="+latLng.latitude +":lng"+latLng.longitude + " distance" + result[0] + "; angle"+result[1]);
-        currentLatLng=latLng;
+        if (result[0] < 5 && isTracing) return;
+        isTracing = true;
+        Logger.i("Map", "onLocationChanged " + "lat=" + latLng.latitude + ":lng" + latLng.longitude + " distance" + result[0] + "; angle" + result[1]);
+        currentLatLng = latLng;
         //TODO: speed
         //https://stackoverflow.com/questions/15570542/determining-the-speed-of-a-vehicle-using-gps-in-android
         notifyUiOnLocationChanged(latLng);
         nextPoiFind(latLng);
     }
-    private void nextPoiFind(LatLng latLng){
+
+    private void nextPoiFind(LatLng latLng) {
         PoiSearchResult pois = poiProvider.findPois(latLng, latestPois);
         if (pois != null && !pois.isEmpty()) {
             pois.removeAll(processedPois);
@@ -203,6 +235,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         }
 
     }
+
     private void notifyUiOnNearestNonVisitedPoiAvailable(@NonNull final Poi poi,
                                                          @NonNull final PoiInfo poiInfo) {
         ThreadUtil.runOnUiThread(() -> {
@@ -213,6 +246,14 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     private void notifyUiOnLocationChanged(@NonNull final LatLng latLng) {
         ThreadUtil.runOnUiThread(() -> updateUiWithLocation(latLng.longitude, latLng.latitude));
+    }
+
+    //todo удалить после внедрения базы данных
+    @Subscribe
+    public void loadJsonFromServerEvent(@NonNull LoadJsonFromServerEvent event) {
+        Logger.i("FtpClient", "Передача файла на парсинг");
+        setStoryFileUri(event.getStoryFileUri());
+        startTracking();
     }
 
     @UiThread
@@ -262,7 +303,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @UiThread
     public void resetTracking() {
         Logger.d("Reset tracking");
-        processedAudioUrls.clear();
+        processedIdContent.clear();
         processedPois.clear();
         locationTracker.resetTracking();
         fragment.updateUiOnResetTracking();
@@ -330,8 +371,8 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     @Subscribe
     public void onTrackPlaybackEndedEvent(@NonNull TrackPlaybackEndedEvent event) {
-        Logger.d("Audio track playback completed, name = %s", event.trackName);
-        Logger.i("Player","ended -> "+ event.trackName);
+      //  Logger.d("Audio track playback completed, name = %s", event.trackName);
+        Logger.i("Player", "ended -> " + event.trackName);
         nextPoiFind(currentLatLng);
         locationTracker.startTracking();
         fragment.hidePlayerControls();
@@ -344,41 +385,47 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     }
 
     private void startPlayingAudioUrlForAvailablePoiIfPossible(@NonNull Poi poi) {
-        if (poi.contents.size() == 0) {
+        //todo переделать логику под wow
+        if (poi.size() == 0) {
             Logger.d("There are no audio urls for poi (%s)", poi);
             processedPois.add(poi);
             return;
         }
         String audioUrlToPlay = null;
-        String audioTypeToPlay = null;
-        int audioUrlCount = poi.contents.size();
-        int i = 0;
-        for (; i < audioUrlCount; i++) {
+        PoiContent.AudioType audioTypeToPlay = null;
+        while(poi.isHasNextContent()){
             //TODO: сделать выбор tts or mp3
-            String audioUrl = poi.contents.get(i).getAudioTrack();
-            String audioType = poi.contents.get(i).getAudioType();
-            if (!processedAudioUrls.contains(audioUrl)) {
+            String audioUrl = poi.getNextContent().getDefaultUrl();
+            Long idUrl=poi.getCurrentContent().id;
+            PoiContent.AudioType audioType = poi.getCurrentContent().getDefaultType();
+            if (!processedIdContent.contains(idUrl)) {
                 audioUrlToPlay = audioUrl;
                 audioTypeToPlay = audioType;
                 //TODO: добовлять после того как трек проигран?
-                processedAudioUrls.add(audioUrl);
+                processedIdContent.add(idUrl);
                 break;
             }
         }
         if (audioUrlToPlay == null) {
             Logger.d("There are no available audio urls for poi (%s), all of them processed", poi);
             processedPois.add(poi);
+            nextPoiFind(currentLatLng);
             return;
         }
         Context ctx = fragment.getActivity();
-        if (audioTypeToPlay.equals("mp3")) {
+       // audioTypeToPlay= PoiContent.AudioType.MP3;
+       // audioUrlToPlay="337034.wav";
+        switch(audioTypeToPlay) {
+            case MP3:
             ctx.startService(new Intent(ctx, AudioService.class)
                     .setAction(AudioService.Action.URL)
                     .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay));
-        } else {
+        break;
+            case TTS:
             ctx.startService(new Intent(ctx, AudioService.class)
                     .setAction(AudioService.Action.TEXT)
                     .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay));
+            break;
         }
     }
 }

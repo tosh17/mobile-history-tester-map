@@ -10,6 +10,7 @@ import android.support.annotation.UiThread;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -30,7 +31,7 @@ import ru.mhistory.R;
 import ru.mhistory.common.util.UiUtil;
 import ru.mhistory.geo.LatLng;
 
-public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickListener {
+public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickListener,GoogleMap.OnCameraMoveListener {
     public GoogleMap googleMap;
     private MapView mapViewDelegate;
 
@@ -113,6 +114,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
         mapViewDelegate.getMapAsync(googleMap -> {
             MhMapView.this.googleMap = googleMap;
             MhMapView.this.googleMap.setOnMarkerClickListener(MhMapView.this);
+            MhMapView.this.googleMap.setOnCameraMoveListener(this);
             callback.onMapReady(googleMap);
         });
     }
@@ -240,7 +242,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                 MarkerOptions markerOptions = createPoiMarkerOptions(latLng.latitude,
                         latLng.longitude, currentPoi.name, currentPoi.full_name,
                         getAudioIndexCache(latLng),
-                        currentPoi.contents.size());
+                        currentPoi.size());
                 currentPoiMarker = googleMap.addMarker(markerOptions);
                 currentPoiMarker.setTag(latLng);
                 markers.put(latLng, currentPoiMarker);
@@ -255,7 +257,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
             Poi poi = poiEntry.getValue();
             MarkerOptions markerOptions = createPoiMarkerOptions(latLng.latitude,
                     latLng.longitude, poi.name, poi.full_name, getAudioIndexCache(latLng),
-                    poi.contents.size());
+                    poi.size());
             this.markerOptions.put(latLng, markerOptions);
         }
     }
@@ -350,10 +352,20 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
             int audioIndex = getAudioIndexCache(latLng);
             audioIndex++;
             currentPoiMarker.setTitle(String.format(Locale.getDefault(), "%s; %d/%d",
-                    currentPoi.name, audioIndex, currentPoi.contents.size()));
+                    currentPoi.name, audioIndex, currentPoi.size()));
             audioIndexCache.put(latLng, audioIndex);
             currentPoiMarker.hideInfoWindow();
             currentPoiMarker.showInfoWindow();
         }
     }
+
+    @Override
+    public void onCameraMove() {
+//        float angle=MhMapView.this.googleMap.getCameraPosition().bearing;
+//        float z=  MhMapView.this.googleMap.getCameraPosition().zoom;
+//        Toast.makeText(this.getContext(),"CameraMove andle=" +angle + " zoom="+z,Toast.LENGTH_SHORT).show();
+
+
+    }
+
 }

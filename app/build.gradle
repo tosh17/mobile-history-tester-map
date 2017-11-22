@@ -27,8 +27,8 @@ ext {
     _minSdkVersion = 16
     _targetSdkVersion = 25
     _buildToolsVersion = '24.0.2'
-    _versionName = '1.0.004'
-    _versionCode = 10
+    _versionName = '1.0.005'
+    _versionCode = 11
     _supportLibVersion = '26.1.0'
     _gmsVersion = '10.2.1'
     _mapsUtils = '0.5'
@@ -116,7 +116,7 @@ dependencies {
     releaseCompile "com.squareup.leakcanary:leakcanary-android-no-op:$_leakcanaryVersion"
     testCompile "com.squareup.leakcanary:leakcanary-android-no-op:$_leakcanaryVersion"
     compile 'com.jakewharton.timber:timber:4.5.1'
-     compile "com.squareup.retrofit2:retrofit:$_retrofitVersion"
+    compile "com.squareup.retrofit2:retrofit:$_retrofitVersion"
     compile "com.squareup.retrofit2:converter-gson:$_retrofitVersion"
     compile "com.jakewharton:butterknife:$_butterknifeVersion"
     annotationProcessor "com.jakewharton:butterknife-compiler:$_butterknifeVersion"
@@ -136,6 +136,7 @@ dependencies {
     //        transitive = true
     //    }
     testCompile 'junit:junit:4.12'
+    implementation files('libs/commons-net-3.6.jar')
 }
 
 apply plugin: 'com.google.gms.google-services'

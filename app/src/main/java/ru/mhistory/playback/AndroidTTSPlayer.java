@@ -1,6 +1,8 @@
 package ru.mhistory.playback;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.support.annotation.NonNull;
@@ -8,6 +10,7 @@ import android.util.Log;
 
 import java.io.FileDescriptor;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
 
 import ru.mhistory.log.Logger;
@@ -16,25 +19,45 @@ import ru.mhistory.log.Logger;
  * Created by shcherbakov on 12.11.2017.
  */
 
-public class AndroidTTSPlayer implements AudioPlayer,TextToSpeech.OnInitListener {
+public class AndroidTTSPlayer extends UtteranceProgressListener implements AudioPlayer, TextToSpeech.OnInitListener {
     private final Callbacks callbacks;
-    private @State int lastState;
-    private @State  int state = State.IDLE;
+    private final Context context;
+    private @State
+    int lastState;
+    private @State
+    int state = State.IDLE;
     TextToSpeech textToSpeech;
-    String strTTS="";
+    private boolean initStatus = false;
+    String strTTS = "";
+    String strToPlay = "";
+    HashMap<String, String> map = new HashMap<String, String>();
+    private Handler mHandler = new Handler();
+
+
+    private final int LonS = 13;
+    private long timeStartPlay;
+    private int progress;
+    private String LogTag = "PlayerTTS";
 
     public AndroidTTSPlayer(Context context, @NonNull Callbacks callbacks) {
-        textToSpeech = new TextToSpeech(context,this);
+        this.context=context;
+        textToSpeech = new TextToSpeech(context, this,"com.google.android.tts");
         this.callbacks = callbacks;
+        map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "UniqueID");
+        textToSpeech.setOnUtteranceProgressListener(this);
+        Logger.i(LogTag, textToSpeech.getDefaultEngine());
+
     }
 
     @Override
     public void prepareAsync(@NonNull String url) {
-        Log.i("Player", "prepareAsync from TTS " + url );
-        //checkState(State.IDLE);
-        strTTS=url;
+        Log.i(LogTag, "prepareAsync from TTS " + url);
+        checkState(State.IDLE);
+        //Todo textToSpeech==null
+        strTTS = url;
         state = State.READY;
         callbacks.onReady();
+
     }
 
     @Override
@@ -55,11 +78,16 @@ public class AndroidTTSPlayer implements AudioPlayer,TextToSpeech.OnInitListener
     @Override
     public void play() {
         checkState(State.READY, State.PAUSED);
-        Logger.i("Player", "play tts to " + strTTS);
-        state = State.PLAYING;
-        Log.i("Player","TTS Start" +strTTS);
-        textToSpeech.speak(strTTS, TextToSpeech.QUEUE_FLUSH, null);
+        Logger.i(LogTag, "play tts to " + strTTS);
+        toPlay(strTTS);
 
+    }
+
+    private void toPlay(String strToPlay) {
+
+        this.strToPlay = strToPlay;
+        textToSpeech.speak(strToPlay, TextToSpeech.QUEUE_FLUSH, map);
+      //  if(!initStatus) toPlay(strToPlay);
     }
 
     @Override
@@ -70,6 +98,12 @@ public class AndroidTTSPlayer implements AudioPlayer,TextToSpeech.OnInitListener
     @Override
     public void toPosition(int position) {
         // TODO: сделать перемещение (stop), обрезать текст, отправить в tts
+        int start = position * strTTS.length() / 100;
+        int end = strTTS.length();
+        char[] buf = new char[end - start];
+        strTTS.getChars(start, end, buf, 0);
+        String str = new String(buf);
+        toPlay(str);
     }
 
     @Override
@@ -79,23 +113,27 @@ public class AndroidTTSPlayer implements AudioPlayer,TextToSpeech.OnInitListener
 
     @Override
     public void release() {
+
         state = State.IDLE;
     }
 
     @Override
     public long getDuration() {
-        return -1;
+        long duration = strTTS.length() / LonS;
+        return duration;
     }
 
     @Override
     public long getCurrentPosition() {
-        return 0;
+        return progress;
     }
 
     @Override
     public void block(boolean isBlock) {
-        if(isBlock) { state=State.BLOCK; lastState=state;}
-        else state=lastState;
+        if (isBlock) {
+            state = State.BLOCK;
+            lastState = state;
+        } else state = lastState;
     }
 
     private void checkState(@State Integer... expectedStates) {
@@ -109,30 +147,66 @@ public class AndroidTTSPlayer implements AudioPlayer,TextToSpeech.OnInitListener
 
     @Override
     public void onInit(int status) {
+        Logger.i(LogTag, "TTS init ");
         if (status == TextToSpeech.SUCCESS) {
 
             Locale locale = new Locale("ru");
-
             int result = textToSpeech.setLanguage(locale);
-            //int result = mTTS.setLanguage(Locale.getDefault());
 
             if (result == TextToSpeech.LANG_MISSING_DATA
                     || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 Log.e("TTS", "Извините, этот язык не поддерживается");
             } else {
-
+                initStatus = true;
 
             }
-
         } else {
             Log.e("TTS", "Ошибка!");
         }
     }
 
-    private void onComplete(){
+    private void onComplete() {
 
-        while (textToSpeech.isSpeaking());
         state = State.ENDED;
-        callbacks.onEnded();
+        context.startService(new Intent(context, AudioService.class)
+                .setAction(AudioService.Action.ENDED));
+      //  callbacks.onEnded();
+    }
+
+
+    Runnable timer = new Runnable() {
+        @Override
+        public void run() {
+            int delta = strTTS.length() - strToPlay.length();
+            int deltaprogress = 100 * delta / strTTS.length();
+            int deltatime = (int) ((System.currentTimeMillis() - timeStartPlay) / 1000);
+            int d = (int) (100 * deltatime * LonS / strToPlay.length());
+            progress = deltaprogress + d;
+            mHandler.postDelayed(timer, 100);
+        }
+    };
+
+    @Override
+    public void onStart(String s) {
+        state = State.PLAYING;
+        Logger.i(LogTag, "TTS Start");
+        timeStartPlay = System.currentTimeMillis();
+        mHandler.removeCallbacks(timer);
+        mHandler.postDelayed(timer, 1);
+    }
+
+    @Override
+    public void onDone(String s) {
+        onComplete();
+        Logger.i(LogTag, "tts Done ");
+    }
+
+    /**
+     * @param s
+     * @deprecated
+     */
+    @Override
+    public void onError(String s) {
+
     }
 }

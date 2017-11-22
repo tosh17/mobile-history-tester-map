@@ -14,7 +14,7 @@ import api.vo.Poi;
 import ru.mhistory.MobileHistoryApp;
 import ru.mhistory.R;
 import ru.mhistory.geo.LatLng;
-
+//todo Это жля тестов можно будет удалить
 public class RawFilePoiProviderDelegate extends FilePoiProviderDelegate {
     private int index = -1;
     private List<Poi> cachePoi = new ArrayList<>();
@@ -43,6 +43,7 @@ public class RawFilePoiProviderDelegate extends FilePoiProviderDelegate {
     @NonNull
     @Override
     protected Reader getFileInputStreamReader() {
+
         return new BufferedReader(
                 new InputStreamReader(
                         MobileHistoryApp.getContext().getResources()

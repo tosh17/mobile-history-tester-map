@@ -24,6 +24,7 @@ import ru.mhistory.log.Logger;
 public abstract class FilePoiProviderDelegate {
     LinkedHashMap<LatLng, Poi> cache;
     private PoiFinder poiFinder;
+    private String LogTag = "JsonPaeser";
 
     FilePoiProviderDelegate(@NonNull PoiFinder pointSearcher) {
         poiFinder = pointSearcher;
@@ -38,11 +39,13 @@ public abstract class FilePoiProviderDelegate {
             cache = readFileCache();
             poiFinder.setPoiCache(cache);
         }
+
         return poiFinder.findPois(latLng, config, inputPois);
     }
 
     @NonNull
     LinkedHashMap<LatLng, Poi> readFileCache() {
+        //todo return list<Poi>
         long startTime = System.currentTimeMillis();
         Logger.d("Starting to parse the story file, start time is (%s, ms)", startTime);
         JsonReader jr = null;
@@ -73,6 +76,7 @@ public abstract class FilePoiProviderDelegate {
 
     @NonNull
     protected LinkedHashMap<LatLng, Poi> readFromJson(@NonNull JsonReader jr) throws IOException {
+        Logger.i(LogTag, "start parse json");
         LinkedHashMap<LatLng, Poi> cache = new LinkedHashMap<>();
         jr.beginObject();
         jr.nextName();
@@ -83,25 +87,24 @@ public abstract class FilePoiProviderDelegate {
         jr.nextString(); // description
         jr.nextName();
         jr.nextInt(); // activationRadius
-        jr.nextName();  //+
-        String strContentType = jr.nextString(); //+
-        boolean contentsFormat = strContentType.equals("mp3");
+        jr.nextName();
+        jr.nextInt(); // area
+        jr.nextName();
+        jr.nextInt(); // version
         jr.nextName(); // points
         jr.beginArray();
 
         while (jr.hasNext()) {
-            long obj_id = 0;  //+
+            jr.beginObject(); //point begin
+            long obj_id = 0;
             String name = "";
-            String type = "";  //+
-            // -    String desc = "";
-            String full_name = ""; //+
-            String full_address = ""; //+
-
+            String type = "";
+            String full_name = "";
+            String full_address = "";
+            String text = "";
             double lat = 0;
             double lon = 0;
-            // -    List<String> audioUrls = new ArrayList<>();
             List<PoiContent> contents = new ArrayList<>();
-            jr.beginObject();
             while (jr.hasNext()) {
 
                 switch (jr.nextName()) {
@@ -114,9 +117,6 @@ public abstract class FilePoiProviderDelegate {
                     case "name":
                         name = jr.nextString();
                         break;
-//                    case "description":
-//                        desc = jr.nextString();
-//                        break;
                     case "type":
                         type = jr.nextString();
                         break;
@@ -132,13 +132,6 @@ public abstract class FilePoiProviderDelegate {
                     case "lat":
                         lat = jr.nextDouble();
                         break;
-//                    case "audio":
-//                        jr.beginArray();
-//                        while (jr.hasNext()) {
-//                            audioUrls.add(jr.nextString());
-//                        }
-//                        jr.endArray();
-//                        break;
                     case "content":
                         jr.beginArray();
                         while (jr.hasNext()) {
@@ -162,6 +155,9 @@ public abstract class FilePoiProviderDelegate {
                                     case "wow":
                                         wow = jr.nextInt();
                                         break;
+                                    case "text":
+                                        text = jr.nextString();
+                                        break;
                                     case "audio":
                                         jr.beginArray();
                                         while (jr.hasNext()) {
@@ -184,19 +180,20 @@ public abstract class FilePoiProviderDelegate {
                                         jr.endArray();
                                 }
                             }
-                            jr.endObject();
-                            contents.add(new PoiContent(contentId, contentName, contentType, wow, contentAudio));
+                            jr.endObject(); //content finish
+                            Logger.i(LogTag, "Load id=" + contentId + "   contentName" + contentName);
+                            contents.add(new PoiContent(contentId, contentName, contentType, wow, text, contentAudio));
                         }
-                        jr.endArray();
+                        jr.endArray();//content array finish
                         break;
                 }
             }
-            jr.endObject();
-            //     cache.put(new LatLng(lat, lon), new Poi(name, desc, lon, lat, audioUrls));
+            jr.endObject();  //point finish
             cache.put(new LatLng(lat, lon), new Poi(obj_id, name, type, full_name, full_address, lon, lat, contents));
         }
-        jr.endArray();
+        jr.endArray(); //point array finish
         jr.endObject();
+        Logger.i(LogTag, "finish parse json");
         return cache;
     }
 }

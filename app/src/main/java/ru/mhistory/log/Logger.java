@@ -213,7 +213,9 @@ public class Logger {
         fileLogger.stop();
     }
 
-    public static void i(String Tag,String Str){
-        Log.i("InformTag->"+Tag,Str);
+    public static void i(String Tag,String str){
+
+        if(str.length()>100)str=str.substring(0, 100)+".....";
+        Log.i("InformTag->"+Tag,str);
     }
 }

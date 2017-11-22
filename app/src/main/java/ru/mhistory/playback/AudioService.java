@@ -31,6 +31,8 @@ import ru.mhistory.common.util.FileUtil;
 import ru.mhistory.log.Logger;
 
 public class AudioService extends Service implements AudioPlayer.Callbacks, AudioFocusable {
+    private String LogTag="AudioService";
+    private boolean isDebug=false;
     public static final String KEY_AUDIO_URL = "AUDIO_URL";
     public static final String KEY_AUDIO_POSITION = "AUDIO_POSITION";
     private static final int NOTIFICATION_ID = 1;
@@ -47,17 +49,21 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     @StringDef({
+            Action.INIT,
             Action.PLAY_OR_PAUSE,
             Action.PLAY_TO_POSITION,
             Action.STOP,
+            Action.ENDED,
             Action.NEXT,
             Action.URL,
             Action.TEXT,
     })
     public @interface Action {
+        String INIT = "ru.mhistory.audioservice.action.INIT";
         String PLAY_OR_PAUSE = "ru.mhistory.audioservice.action.PLAY_OR_PAUSE";
         String PLAY_TO_POSITION = "ru.mhistory.audioservice.action.PLAY_TO_POSITION";
         String STOP = "ru.mhistory.audioservice.action.STOP";
+        String ENDED = "ru.mhistory.audioservice.action.ENDED";
         String NEXT = "ru.mhistory.audioservice.action.NEXT";
         String URL = "ru.mhistory.audioservice.action.URL";
         String TEXT = "ru.mhistory.audioservice.action.TEXT";
@@ -66,8 +72,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
 
     private Runnable audioTrackProgressRunnable = new Runnable() {
         public void run() {
-            sendTrackDurationsUpdateEvent(audioPlayer.getCurrentPosition(),
-                    audioPlayer.getDuration());
+            sendTrackDurationsUpdateEvent(getNotBlockPlayer().getCurrentPosition(),
+                    getNotBlockPlayer().getDuration());
             trackProgressHandler.postDelayed(this, 100);
         }
     };
@@ -92,7 +98,11 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     @Override
     public void onCreate() {
         super.onCreate();
-     //   android.os.Debug.waitForDebugger();
+
+
+        if(isDebug)android.os.Debug.waitForDebugger();
+
+
         audioPlayer = new AndroidAudioPlayer(this);
         ttsPlayer = new AndroidTTSPlayer(getBaseContext(), this);
         notificationManager = getNotificationManager();
@@ -141,6 +151,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent.getAction();
         switch (action) {
+            case Action.INIT:
+                 break;
             case Action.PLAY_OR_PAUSE:
                 onPlayOrPauseAction();
                 break;
@@ -151,12 +163,15 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
             case Action.STOP:
                 onStopAction();
                 break;
+            case Action.ENDED:
+               onEnded();
+                break;
             case Action.NEXT:
                 onNextAction();
                 break;
             case Action.URL:
                 String url = intent.getExtras().getString(KEY_AUDIO_URL);
-                Logger.i("Player", "intent to mp3-> " + url);
+                Logger.i(LogTag, "intent to mp3-> " + url);
                 if (!TextUtils.isEmpty(url)) {
                     ttsPlayer.block(true);
                     onAudioTrackUrlAvailable(url);
@@ -164,7 +179,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 break;
             case Action.TEXT:
                 String text = intent.getExtras().getString(KEY_AUDIO_URL);
-                Logger.i("Player", "intent to tts-> " + text);
+                Logger.i(LogTag, "intent to tts-> " + text);
                 if (!TextUtils.isEmpty(text)) {
                     audioPlayer.block(true);
                     onAudioTrackUrlAvailable(text);
@@ -181,7 +196,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onPlayOrPauseAction() {
-        Logger.i("Player", "nPlayOrPauseAction -> " + getNotBlockPlayer().getClass().toString());
+        Logger.i(LogTag, "nPlayOrPauseAction -> " + getNotBlockPlayer().getClass().toString());
         if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING) {
             onPauseAction();
         } else {
@@ -300,12 +315,10 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void releaseAudioPlayerIfNeeded(boolean releaseAudioPlayer) {
-        if (releaseAudioPlayer && audioPlayer != null) {
-            audioPlayer.release();
+        if (releaseAudioPlayer && getNotBlockPlayer() != null) {
+            getNotBlockPlayer().release();
         }
-        if (releaseAudioPlayer && ttsPlayer != null) {
-            ttsPlayer.release();
-        }
+
         if (releaseAudioPlayer) {
             currentAudioTrackUrl = null;
         }
@@ -358,8 +371,10 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void updateNotification(@NonNull String text) {
-        notificationBuilder.setContentText(text);
-        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
+      //Todo notificationBuilder он вообще нужен?
+        return;
+//        notificationBuilder.setContentText(text);
+//        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
     }
 
     private void setUpAsForeground(@NonNull String title, @NonNull String text) {
@@ -384,6 +399,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
 
     @Override
     public void onReady() {
+
         Logger.d("Playback is ready for (%s)", currentAudioTrackUrl);
         updateNotification("playing...");
         startAudioTrackProgress();
@@ -394,11 +410,11 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
 
     @Override
     public void onEnded() {
-        Logger.d("Playback is ended for (%s)", currentAudioTrackUrl);
-        sendTrackPlaybackEndedEvent();
+          Logger.i(LogTag,"Playback is ended for "+ currentAudioTrackUrl);
         releaseResources(true);
-//        ttsPlayer.block(false);
-//        audioPlayer.block(false);
+        sendTrackPlaybackEndedEvent();
+
+  
     }
 
     @Override

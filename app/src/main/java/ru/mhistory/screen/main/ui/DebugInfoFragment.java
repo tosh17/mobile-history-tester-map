@@ -105,6 +105,7 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
         View rootView = inflater.inflate(R.layout.fragment_main_new, container, false);
         unbinder = ButterKnife.bind(this, rootView);
         initViews();
+        presenter.loadData(getContext());
         return rootView;
     }
 
@@ -419,11 +420,11 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
         Log.w(getClass().getSimpleName(), "onActivityResult");
         if (requestCode == REQUEST_STORY_PICKER && resultCode == Activity.RESULT_OK) {
             Uri storyFileUri = data.getData();
-            presenter.setStoryFileUri(storyFileUri);
+          presenter.setStoryFileUri(storyFileUri);
             // печать названия файла
             //       storyFile.setText(storyFileUri.toString());
-
-            presenter.startTracking();
+           //Todo выбор файла json
+           presenter.startTracking();
         }
     }
 
