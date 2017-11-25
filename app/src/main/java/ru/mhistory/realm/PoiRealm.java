@@ -96,4 +96,7 @@ public class PoiRealm extends RealmObject {
     }
 
 
+    public Poi toPoi() {
+        return new Poi(objId,name,type,full_name,full_address,longitude,latitude);
+    }
 }

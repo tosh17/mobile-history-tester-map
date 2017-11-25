@@ -14,9 +14,9 @@ import api.vo.Poi;
 import api.vo.PoiInfo;
 
 public final class PoiSearchResult {
-    final SortedMap<PoiInfo, Poi> withinMinRadius = new TreeMap<>();
-    final SortedMap<PoiInfo, Poi> betweenMinAndMaxRadius = new TreeMap<>();
-    final SortedMap<PoiInfo, Poi> outOfMaxRadius = new TreeMap<>();
+    public final SortedMap<PoiInfo, Poi> withinMinRadius = new TreeMap<>();
+    public final SortedMap<PoiInfo, Poi> betweenMinAndMaxRadius = new TreeMap<>();
+    public final SortedMap<PoiInfo, Poi> outOfMaxRadius = new TreeMap<>();
 
     @NonNull
     public Set<Poi> getAllPoi() {

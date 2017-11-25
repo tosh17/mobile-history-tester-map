@@ -3,8 +3,12 @@ package ru.mhistory.providers;
 import android.location.Location;
 import android.util.Pair;
 
+import java.util.Set;
+
+import api.vo.Poi;
 import api.vo.PoiInfo;
 import ru.mhistory.geo.LatLng;
+import ru.mhistory.provider.PoiSearchResult;
 
 /**
  * Created by shcherbakov on 25.11.2017.
@@ -40,11 +44,31 @@ public class PoiSearch {
         return c;
     }
 
-    public static PoiInfo getPoiInfo(LatLng current,LatLng remote){
-        float[] direction=new float[2];
+    public static PoiInfo getPoiInfo(LatLng current, LatLng remote) {
+        float[] direction = new float[2];
         Location.distanceBetween(current.latitude, current.longitude,
                 remote.latitude, remote.longitude, direction);
 
-        return new PoiInfo(direction[0],direction[1]);
+        return new PoiInfo(direction[0], direction[1]);
+    }
+
+    public static PoiInfo getPoiInfo(double latitude1, double longitude1, double latitude2, double longitude2) {
+        float[] direction = new float[2];
+        Location.distanceBetween(latitude1, longitude1,
+                latitude2, longitude2, direction);
+
+        return new PoiInfo(direction[0], direction[1]);
+    }
+
+    public static PoiSearchResult findPoi(LatLng current, Set<Poi> pois, int minRadius, int maxRadius) {
+        PoiSearchResult poiResult = new PoiSearchResult();
+        for (Poi poi : pois) {
+            PoiInfo poiInfo = getPoiInfo(current.latitude, current.longitude, poi.latitude, poi.longitude);
+            if (poiInfo.distanceTo <= minRadius) poiResult.withinMinRadius.put(poiInfo, poi);
+            if (poiInfo.distanceTo > minRadius && poiInfo.distanceTo <= maxRadius)
+                poiResult.betweenMinAndMaxRadius.put(poiInfo, poi);
+            if (poiInfo.distanceTo > maxRadius) poiResult.outOfMaxRadius.put(poiInfo, poi);
+        }
+        return poiResult;
     }
 }

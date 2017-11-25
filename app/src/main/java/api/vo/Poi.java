@@ -44,7 +44,10 @@ public class Poi {
         this.longitude = longitude;
         this.latitude = latitude;
         }
-     public Poi addContent(PoiContent content){
+
+
+
+    public Poi addContent(PoiContent content){
       if(contents==null) contents=new ArrayList<>()  ;
        contents.add(content);
        return this;

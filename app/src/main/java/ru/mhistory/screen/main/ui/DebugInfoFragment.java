@@ -105,7 +105,6 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
         View rootView = inflater.inflate(R.layout.fragment_main_new, container, false);
         unbinder = ButterKnife.bind(this, rootView);
         initViews();
-        presenter.loadData(getContext());
         return rootView;
     }
 

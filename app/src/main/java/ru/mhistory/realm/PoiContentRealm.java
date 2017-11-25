@@ -1,5 +1,8 @@
 package ru.mhistory.realm;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import api.vo.PoiContent;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -18,6 +21,7 @@ public class PoiContentRealm extends RealmObject {
     public String keyAudio;
     public  String audio;
     public  String text;
+
     public PoiContentRealm(){}
     public PoiContentRealm fromPoiContent(long idPoi,PoiContent poiContent) {
         this.id=poiContent.id;
@@ -109,5 +113,16 @@ public class PoiContentRealm extends RealmObject {
     public PoiContentRealm setText(String text) {
         this.text = text;
         return this;
+    }
+
+    public PoiContent toPoiContent() {
+        Map<String,String> mapAudio=new HashMap<>();
+        String [] keyArr=keyAudio.split(";");
+        String [] audioArr=audio.split(";");
+
+        for(int i=0;i<keyArr.length;i++){
+            mapAudio.put(keyArr[i],audioArr[i]);
+        }
+        return new PoiContent(id,name,content_type,wow,text,mapAudio);
     }
 }

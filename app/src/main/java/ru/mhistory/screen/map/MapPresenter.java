@@ -22,6 +22,7 @@ import api.vo.PoiContent;
 import api.vo.PoiInfo;
 import ru.mhistory.R;
 import ru.mhistory.bus.BusProvider;
+import ru.mhistory.bus.event.BDCompliteEvent;
 import ru.mhistory.bus.event.CanPauseEvent;
 import ru.mhistory.bus.event.CanPlayEvent;
 import ru.mhistory.bus.event.LoadJsonFromServerEvent;
@@ -72,6 +73,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             MIN_POI_MAX_RADIUS_M, MAX_POI_MAX_RADIUS_M, POI_MAX_RADIUS_STEP_M);
 
     private Set<Long> processedIdContent = new HashSet<>();  //прослушаные треки
+    private Set<Poi> fullListPoi=new HashSet<>();
     private Set<Poi> processedPois = new HashSet<>();          // прослушаные POI
     private Set<Poi> latestPois = new HashSet<>();
     private final LocationTracker locationTracker;
@@ -99,31 +101,6 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         poiProvider.setProviderConfig(poiProviderConfig);
         locationTracker.setLocationUpdateCallbacks(this);
         locationTracker.setLocationUpdateIntervalMs(10 * 1000);
-
-    }
-
-    public void loadData(Context context) {
-        //todo заменить имена файлов
-        String tempName = "temp.zip";
-        String jsonName = "34pois.json";
-        ServerLoaderProvider serverLoader = new ServerFtpLoader();
-        File file = new File(context.getFilesDir() + "/" + tempName);
-        serverLoader.load(file, new ServerLoaderProvider.onServerLoadFinish() {
-            @Override
-            public void loadFinished(boolean statusLoad) {
-                try {
-                    serverLoader.unzip(context.getFilesDir().toString() + "/", tempName);
-                    Uri uri = Uri.fromFile(new File(context.getFilesDir() + "/" + jsonName));
-                    //TODO добавить запись в базу
-                    //RealmFactory.getInstance(fragment.getActivity().getApplicationContext());
-                    //new JsonToReal(uri).doIt();
-                    //setStoryFileUri(uri);
-                    startTracking();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
 
     }
 
@@ -216,6 +193,12 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                 currentLatLng.latitude, currentLatLng.longitude, result);
 
         if (result[0] < 5 && isTracing) return;
+        if(!isTracing){
+            android.util.Pair<LatLng, LatLng> square = PoiSearch.getSquare(latLng, 100000);
+            RealmFactory factory=RealmFactory.getInstance();
+            fullListPoi=factory.findSquare(square);
+            latestPois=fullListPoi;
+        }
         isTracing = true;
         Logger.i("Map", "onLocationChanged " + "lat=" + latLng.latitude + ":lng" + latLng.longitude + " distance" + result[0] + "; angle" + result[1]);
         currentLatLng = latLng;
@@ -227,7 +210,9 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     }
 
     private void nextPoiFind(LatLng latLng) {
-        PoiSearchResult pois = poiProvider.findPois(latLng, latestPois);
+
+       // PoiSearchResult pois = poiProvider.findPois(latLng, latestPois);
+        PoiSearchResult pois =PoiSearch.findPoi(latLng,latestPois,10000,20000);
         if (pois != null && !pois.isEmpty()) {
             pois.removeAll(processedPois);
             latestPois = pois.getAllPoi();
@@ -256,9 +241,8 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     //todo удалить после внедрения базы данных
     @Subscribe
-    public void loadJsonFromServerEvent(@NonNull LoadJsonFromServerEvent event) {
-        Logger.i("FtpClient", "Передача файла на парсинг");
-        setStoryFileUri(event.getStoryFileUri());
+    public void bdCompliteEvent(@NonNull BDCompliteEvent event) {
+        Logger.i("MapPresent", "База подготовлена");
         startTracking();
     }
 
