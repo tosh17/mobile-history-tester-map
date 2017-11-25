@@ -1,7 +1,6 @@
-package ru.mhistory.provider;
+package ru.mhistory.providers;
 
 import android.os.AsyncTask;
-import android.util.Log;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -12,7 +11,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import ru.mhistory.common.util.FileUtil;
 import ru.mhistory.log.Logger;
 
 /**

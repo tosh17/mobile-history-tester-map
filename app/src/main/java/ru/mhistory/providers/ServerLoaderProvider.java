@@ -1,4 +1,4 @@
-package ru.mhistory.provider;
+package ru.mhistory.providers;
 
 import java.io.BufferedInputStream;
 import java.io.File;

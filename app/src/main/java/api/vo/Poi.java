@@ -15,7 +15,7 @@ public class Poi {
     public final String full_address; //+
     public final double longitude;
     public final double latitude;
-    private final List<PoiContent> contents;
+    private List<PoiContent> contents;
     private int currentContent=-1;
 
     public Poi(long objId,@NonNull String name,
@@ -32,7 +32,23 @@ public class Poi {
         this.latitude = latitude;
         this.contents = Collections.unmodifiableList(contents);
     }
-
+    public Poi(long objId,@NonNull String name,
+               @NonNull String type,@NonNull String full_name,@NonNull String full_address,
+               double longitude,
+               double latitude) {
+        this.objId=objId;
+        this.name = name;
+        this.type=type;
+        this.full_name=full_name;
+        this.full_address=full_address;
+        this.longitude = longitude;
+        this.latitude = latitude;
+        }
+     public Poi addContent(PoiContent content){
+      if(contents==null) contents=new ArrayList<>()  ;
+       contents.add(content);
+       return this;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -87,4 +103,8 @@ public class Poi {
     }
 
     public int size(){ return contents.size();}
+
+    public List<PoiContent> getAllContent() {
+        return contents;
+    }
 }

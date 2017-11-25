@@ -47,9 +47,12 @@ import ru.mhistory.provider.DefaultPoiFinder;
 import ru.mhistory.provider.FilePoiProvider;
 import ru.mhistory.provider.PoiProviderConfig;
 import ru.mhistory.provider.PoiSearchResult;
-import ru.mhistory.provider.ServerFtpLoader;
-import ru.mhistory.provider.ServerLoaderProvider;
+import ru.mhistory.providers.JsonToReal;
+import ru.mhistory.providers.PoiSearch;
+import ru.mhistory.providers.ServerFtpLoader;
+import ru.mhistory.providers.ServerLoaderProvider;
 import ru.mhistory.provider.UriFileProviderDelegate;
+import ru.mhistory.realm.RealmFactory;
 import ru.mhistory.screen.main.ui.DebugInfoFragment;
 import ru.mhistory.screen.main.ui.widget.NumberPickerDialog;
 
@@ -112,7 +115,9 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                     serverLoader.unzip(context.getFilesDir().toString() + "/", tempName);
                     Uri uri = Uri.fromFile(new File(context.getFilesDir() + "/" + jsonName));
                     //TODO добавить запись в базу
-                    setStoryFileUri(uri);
+                    //RealmFactory.getInstance(fragment.getActivity().getApplicationContext());
+                    //new JsonToReal(uri).doIt();
+                    //setStoryFileUri(uri);
                     startTracking();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -214,6 +219,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         isTracing = true;
         Logger.i("Map", "onLocationChanged " + "lat=" + latLng.latitude + ":lng" + latLng.longitude + " distance" + result[0] + "; angle" + result[1]);
         currentLatLng = latLng;
+        PoiSearch.getSquare(currentLatLng,10000);
         //TODO: speed
         //https://stackoverflow.com/questions/15570542/determining-the-speed-of-a-vehicle-using-gps-in-android
         notifyUiOnLocationChanged(latLng);

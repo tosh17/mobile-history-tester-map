@@ -3,17 +3,14 @@ package ru.mhistory.screen.map;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.UiThread;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBar;
@@ -40,9 +37,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 import com.squareup.otto.Subscribe;
 
-import java.io.File;
-import java.io.IOException;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -50,7 +44,6 @@ import ru.mhistory.BuildConfig;
 import ru.mhistory.Prefs;
 import ru.mhistory.R;
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.LoadJsonFromServerEvent;
 import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
 import ru.mhistory.bus.event.PoiFoundEvent;
@@ -69,8 +62,7 @@ import ru.mhistory.geo.LocationRequestDefaults;
 import ru.mhistory.log.Logger;
 import ru.mhistory.playback.AudioService;
 import ru.mhistory.provider.PoiProviderConfig;
-import ru.mhistory.provider.ServerFtpLoader;
-import ru.mhistory.provider.ServerLoaderProvider;
+import ru.mhistory.realm.RealmFactory;
 import ru.mhistory.screen.DrawerActivity;
 import ru.mhistory.screen.map.ui.MhMapView;
 
@@ -129,7 +121,7 @@ public class MapActivity
         //todo servic
         startService(new Intent(this, AudioService.class)
                 .setAction(AudioService.Action.INIT));
-
+        RealmFactory.getInstance(getApplicationContext());
     }
 
     @Override
