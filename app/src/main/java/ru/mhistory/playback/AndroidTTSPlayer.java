@@ -86,6 +86,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     private void toPlay(String strToPlay) {
 
         this.strToPlay = strToPlay;
+      //  textToSpeech.playSilentUtterance(1000,TextToSpeech.QUEUE_ADD,null);
         textToSpeech.speak(strToPlay, TextToSpeech.QUEUE_FLUSH, map);
       //  if(!initStatus) toPlay(strToPlay);
     }
@@ -168,6 +169,12 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     private void onComplete() {
 
         state = State.ENDED;
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+
+
+        }
         context.startService(new Intent(context, AudioService.class)
                 .setAction(AudioService.Action.ENDED));
       //  callbacks.onEnded();

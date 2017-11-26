@@ -233,7 +233,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
             for (Map.Entry<ru.mhistory.geo.LatLng, MarkerOptions> entry : markerOptions.entrySet()) {
                 Marker poiMarker = googleMap.addMarker(entry.getValue());
                 poiMarker.setTag(entry.getKey());
-                markers.put(entry.getKey(), poiMarker);
+                 markers.put(entry.getKey(), poiMarker);
             }
         } else {
             if (currentPoi != null) {

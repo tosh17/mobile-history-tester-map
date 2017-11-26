@@ -212,7 +212,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     private void nextPoiFind(LatLng latLng) {
 
        // PoiSearchResult pois = poiProvider.findPois(latLng, latestPois);
-        PoiSearchResult pois =PoiSearch.findPoi(latLng,latestPois,10000,20000);
+        PoiSearchResult pois =PoiSearch.findPoi(latLng,latestPois,5000,10000);
         if (pois != null && !pois.isEmpty()) {
             pois.removeAll(processedPois);
             latestPois = pois.getAllPoi();

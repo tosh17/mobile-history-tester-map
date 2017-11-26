@@ -67,7 +67,8 @@ public class PoiSearch {
             if (poiInfo.distanceTo <= minRadius) poiResult.withinMinRadius.put(poiInfo, poi);
             if (poiInfo.distanceTo > minRadius && poiInfo.distanceTo <= maxRadius)
                 poiResult.betweenMinAndMaxRadius.put(poiInfo, poi);
-            if (poiInfo.distanceTo > maxRadius) poiResult.outOfMaxRadius.put(poiInfo, poi);
+          //Todo разобраться нах это нужно
+            //  if (poiInfo.distanceTo > maxRadius) poiResult.outOfMaxRadius.put(poiInfo, poi);
         }
         return poiResult;
     }
