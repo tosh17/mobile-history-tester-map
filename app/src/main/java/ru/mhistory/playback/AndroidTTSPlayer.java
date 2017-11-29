@@ -21,6 +21,7 @@ import ru.mhistory.log.Logger;
 
 public class AndroidTTSPlayer extends UtteranceProgressListener implements AudioPlayer, TextToSpeech.OnInitListener {
     private final Callbacks callbacks;
+    private final PreambulaCallback preambulaCallback;
     private final Context context;
     private @State
     int lastState;
@@ -31,6 +32,9 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     String strTTS = "";
     String strToPlay = "";
     HashMap<String, String> map = new HashMap<String, String>();
+    HashMap<String, String> mapP = new HashMap<String, String>();
+    private final String typePlayTrack="Track";
+    private final String typePlayPreambula="Preambula";
     private Handler mHandler = new Handler();
 
 
@@ -39,11 +43,13 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     private int progress;
     private String LogTag = "PlayerTTS";
 
-    public AndroidTTSPlayer(Context context, @NonNull Callbacks callbacks) {
+    public AndroidTTSPlayer(Context context, @NonNull Callbacks callbacks, @NonNull PreambulaCallback preambulaCallback) {
         this.context=context;
+        this.preambulaCallback=preambulaCallback;
         textToSpeech = new TextToSpeech(context, this,"com.google.android.tts");
         this.callbacks = callbacks;
-        map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "UniqueID");
+        map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, typePlayTrack);
+        mapP.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, typePlayPreambula);
         textToSpeech.setOnUtteranceProgressListener(this);
         Logger.i(LogTag, textToSpeech.getDefaultEngine());
 
@@ -90,6 +96,10 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
         textToSpeech.speak(strToPlay, TextToSpeech.QUEUE_FLUSH, map);
       //  if(!initStatus) toPlay(strToPlay);
     }
+    public void toPlayPreambula(String strToPlay) {
+        this.strToPlay = strToPlay;
+        textToSpeech.speak(strToPlay, TextToSpeech.QUEUE_FLUSH, mapP);
+        }
 
     @Override
     public void pause() {
@@ -173,11 +183,10 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
             Thread.sleep(1000);
         } catch (InterruptedException e) {
 
-
         }
-        context.startService(new Intent(context, AudioService.class)
-                .setAction(AudioService.Action.ENDED));
-      //  callbacks.onEnded();
+//        context.startService(new Intent(context, AudioService.class)
+//                .setAction(AudioService.Action.ENDED));
+       callbacks.onEnded();
     }
 
 
@@ -195,18 +204,32 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
     @Override
     public void onStart(String s) {
-        state = State.PLAYING;
-        Logger.i(LogTag, "TTS Start");
-        timeStartPlay = System.currentTimeMillis();
-        mHandler.removeCallbacks(timer);
-        mHandler.postDelayed(timer, 1);
+        switch(s){
+            case typePlayTrack:
+                state = State.PLAYING;
+                Logger.i(LogTag, "TTS Start");
+                timeStartPlay = System.currentTimeMillis();
+                mHandler.removeCallbacks(timer);
+                mHandler.postDelayed(timer, 1);
+                break;
+            case typePlayPreambula:
+                  break;
+        }
+
     }
 
     @Override
     public void onDone(String s) {
-        onComplete();
-        Logger.i(LogTag, "tts Done ");
-    }
+        switch(s){
+            case typePlayTrack:
+                onComplete();
+                Logger.i(LogTag, "tts Done ");
+                break;
+            case typePlayPreambula:
+                 preambulaCallback.preambulaEnded();
+                break;
+        }
+          }
 
     /**
      * @param s

@@ -41,6 +41,10 @@ public interface AudioPlayer {
         boolean onError();
         //TODO void onBlock(boolean);
     }
+    interface PreambulaCallback{
+       void preambulaEnded();
+    }
+
 
     void prepareAsync(@NonNull String url);
 

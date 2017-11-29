@@ -60,6 +60,7 @@ public class PoiSearch {
         return new PoiInfo(direction[0], direction[1]);
     }
 
+    @Deprecated
     public static PoiSearchResult findPoi(LatLng current, Set<Poi> pois, int minRadius, int maxRadius) {
         PoiSearchResult poiResult = new PoiSearchResult();
         for (Poi poi : pois) {
@@ -67,9 +68,39 @@ public class PoiSearch {
             if (poiInfo.distanceTo <= minRadius) poiResult.withinMinRadius.put(poiInfo, poi);
             if (poiInfo.distanceTo > minRadius && poiInfo.distanceTo <= maxRadius)
                 poiResult.betweenMinAndMaxRadius.put(poiInfo, poi);
-          //Todo разобраться нах это нужно
+            //Todo разобраться нах это нужно
             //  if (poiInfo.distanceTo > maxRadius) poiResult.outOfMaxRadius.put(poiInfo, poi);
         }
         return poiResult;
+    }
+
+    public static PoiSearchZoneResult findPoi(LatLng current, Set<Poi> pois, SearchConf conf) {
+        PoiSearchZoneResult poiResult = new PoiSearchZoneResult();
+        for (Poi poi : pois) {
+            PoiInfo poiInfo = getPoiInfo(current.latitude, current.longitude, poi.latitude, poi.longitude);
+            float poiFromMoveAngle = conf.movementAngle - poiInfo.angle;
+            if (poiInfo.distanceTo <= conf.radiusStay) {
+                poiResult.stay.put(poiInfo, poi);
+                if (poiInfo.distanceTo <= conf.radiusZone1) poiResult.zone1.put(poiInfo, poi);
+                else if (poiInfo.distanceTo <= conf.radiusZone2
+                        && isRangeAngleMirror(conf.deltaAngleZona2, poiFromMoveAngle))
+                    poiResult.zone2.put(poiInfo, poi);
+                else if (!isRangeAngleMirror(conf.deltaAngleZona2, poiFromMoveAngle)
+                        && isRangeAngleMirror(conf.deltaAngleZona3, poiFromMoveAngle))
+                    poiResult.zone3.put(poiInfo, poi);
+            }
+        }
+        return poiResult;
+    }
+
+    private static boolean isRangeAngleMirror(float zoneAngle, float poiFromMoveAngle) { //лежит ли angle2  в секторе angle1
+
+        return Math.abs(poiFromMoveAngle) <= zoneAngle;
+    }
+
+    @Override
+    public String toString() {
+        //todo  вывод точек по зонам
+        return "PoiSearch{}";
     }
 }

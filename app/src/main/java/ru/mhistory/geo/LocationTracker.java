@@ -15,7 +15,7 @@ public interface LocationTracker {
 
 
     interface LocationUpdateCallbacks {
-        void onLocationChanged(@NonNull LatLng latLng);
+        void onLocationChanged(@NonNull LatLng latLng, long time);
     }
 
 

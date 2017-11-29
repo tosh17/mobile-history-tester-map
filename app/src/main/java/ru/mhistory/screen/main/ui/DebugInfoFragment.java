@@ -419,7 +419,7 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
         Log.w(getClass().getSimpleName(), "onActivityResult");
         if (requestCode == REQUEST_STORY_PICKER && resultCode == Activity.RESULT_OK) {
             Uri storyFileUri = data.getData();
-          presenter.setStoryFileUri(storyFileUri);
+            // presenter.setStoryFileUri(storyFileUri);
             // печать названия файла
             //       storyFile.setText(storyFileUri.toString());
            //Todo выбор файла json
@@ -483,7 +483,7 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
     }
 
     private void onClearStoryFile() {
-        presenter.setStoryFileUri(null);
+       // presenter.setStoryFileUri(null);
         //storyFile.setText(R.string.empty_story_file);
     }
 

@@ -59,8 +59,8 @@ public class GoogleApiLocationTracker implements LocationTracker {
         public void onLocationChanged(Location location) {
             if (locationUpdateCallbacks != null) {
                 Logger.d("New location available: %s", location);
-                locationUpdateCallbacks.onLocationChanged(new LatLng(location.getLatitude(),
-                        location.getLongitude()));
+                 locationUpdateCallbacks.onLocationChanged(new LatLng(location.getLatitude(),
+                        location.getLongitude()),location.getTime());
             }
         }
     };

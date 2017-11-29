@@ -109,9 +109,11 @@ public class DummyLocationTracker implements LocationTracker {
             });
             return;
         }
+
         LatLng nextLatLng = getLocation();
         if (nextLatLng != null && locationUpdateCallbacks != null) {
-            locationUpdateCallbacks.onLocationChanged(nextLatLng);
+            //toDo расчет скорости
+            locationUpdateCallbacks.onLocationChanged(nextLatLng, 1000);
         }
         locationUpdateHandler.sendEmptyMessageDelayed(MSG_NEXT_LOCATION, locationUpdateIntervalMs);
     }

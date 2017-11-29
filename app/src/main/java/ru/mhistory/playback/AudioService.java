@@ -28,12 +28,15 @@ import ru.mhistory.bus.event.PlaybackStopEvent;
 import ru.mhistory.bus.event.TrackPlaybackEndedEvent;
 import ru.mhistory.bus.event.TrackProgressEvent;
 import ru.mhistory.common.util.FileUtil;
+import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.log.Logger;
 
-public class AudioService extends Service implements AudioPlayer.Callbacks, AudioFocusable {
-    private String LogTag="AudioService";
-    private boolean isDebug=false;
+public class AudioService extends Service implements AudioPlayer.Callbacks, AudioPlayer.PreambulaCallback, AudioFocusable {
+    private String LogTag = "AudioService";
+    private boolean isDebug = false;
     public static final String KEY_AUDIO_URL = "AUDIO_URL";
+    public static final String KEY_IS_PREAMBULA = "IS_PREAMBULA";
+    public static final String KEY_PREAMBULA = "PREAMBULA";
     public static final String KEY_AUDIO_POSITION = "AUDIO_POSITION";
     private static final int NOTIFICATION_ID = 1;
 
@@ -88,6 +91,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     private int audioFocus;
     private File externalRootDir;
     private String currentAudioTrackUrl;
+    private String AfterPreambule;
 
     @Nullable
     @Override
@@ -100,11 +104,11 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         super.onCreate();
 
 
-        if(isDebug)android.os.Debug.waitForDebugger();
+        if (isDebug) android.os.Debug.waitForDebugger();
 
 
         audioPlayer = new AndroidAudioPlayer(this);
-        ttsPlayer = new AndroidTTSPlayer(getBaseContext(), this);
+        ttsPlayer = new AndroidTTSPlayer(getBaseContext(), this, this);
         notificationManager = getNotificationManager();
         audioFocusHelper = new AudioFocusHelper(getApplicationContext(), this);
         trackProgressHandler = new Handler();
@@ -152,7 +156,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         String action = intent.getAction();
         switch (action) {
             case Action.INIT:
-                 break;
+                break;
             case Action.PLAY_OR_PAUSE:
                 onPlayOrPauseAction();
                 break;
@@ -164,7 +168,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 onStopAction();
                 break;
             case Action.ENDED:
-               onEnded();
+                onEnded();
                 break;
             case Action.NEXT:
                 onNextAction();
@@ -174,7 +178,10 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 Logger.i(LogTag, "intent to mp3-> " + url);
                 if (!TextUtils.isEmpty(url)) {
                     ttsPlayer.block(true);
-                    onAudioTrackUrlAvailable(url);
+                    if (intent.getExtras().getBoolean(KEY_IS_PREAMBULA)) {
+                        AfterPreambule = url;
+                        onTrackPreambula(intent.getExtras().getString(KEY_PREAMBULA));
+                    } else onAudioTrackUrlAvailable(url);
                 }
                 break;
             case Action.TEXT:
@@ -182,7 +189,10 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 Logger.i(LogTag, "intent to tts-> " + text);
                 if (!TextUtils.isEmpty(text)) {
                     audioPlayer.block(true);
-                    onAudioTrackUrlAvailable(text);
+                    if (intent.getExtras().getBoolean(KEY_IS_PREAMBULA)) {
+                        AfterPreambule = text;
+                        onTrackPreambula(intent.getExtras().getString(KEY_PREAMBULA));
+                    } else onAudioTrackUrlAvailable(text);
                 }
                 break;
         }
@@ -190,6 +200,13 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         // restart in case it's killed.
     }
 
+    private void onTrackPreambula(String string) {
+        ((AndroidTTSPlayer) ttsPlayer).toPlayPreambula(string);
+    }
+    @Override
+    public void preambulaEnded() {
+        onAudioTrackUrlAvailable(AfterPreambule);
+    }
     @NonNull
     private NotificationManager getNotificationManager() {
         return (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -371,7 +388,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void updateNotification(@NonNull String text) {
-      //Todo notificationBuilder он вообще нужен?
+        //Todo notificationBuilder он вообще нужен?
         return;
 //        notificationBuilder.setContentText(text);
 //        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
@@ -410,11 +427,11 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
 
     @Override
     public void onEnded() {
-          Logger.i(LogTag,"Playback is ended for "+ currentAudioTrackUrl);
+        Logger.i(LogTag, "Playback is ended for " + currentAudioTrackUrl);
         releaseResources(true);
         sendTrackPlaybackEndedEvent();
 
-  
+
     }
 
     @Override
@@ -434,8 +451,11 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void sendNextTrackInfoEvent() {
-        BusProvider.getInstance().post(new NextTrackInfoEvent(currentAudioTrackUrl,
-                audioPlayer.getDuration(), 1, 1));
+        ThreadUtil.runOnUiThread(() -> {
+            BusProvider.getInstance().post(new NextTrackInfoEvent(currentAudioTrackUrl,
+                    audioPlayer.getDuration(), 1, 1));
+        });
+
     }
 
     private void sendTrackDurationsUpdateEvent(long currentDuration, long totalDuration) {
@@ -443,7 +463,10 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void sendTrackPlaybackEndedEvent() { //Конец трека
-        BusProvider.getInstance().post(new TrackPlaybackEndedEvent(currentAudioTrackUrl));
+        ThreadUtil.runOnUiThread(() -> {
+            BusProvider.getInstance().post(new TrackPlaybackEndedEvent(currentAudioTrackUrl));
+        });
+
     }
 
     private void sendPlaybackStopEvent() {
