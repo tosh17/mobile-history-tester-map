@@ -24,6 +24,7 @@ import io.realm.RealmList;
 import ru.mhistory.MobileHistoryApp;
 import ru.mhistory.bus.BusProvider;
 import ru.mhistory.bus.event.BDCompliteEvent;
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 import ru.mhistory.realm.PoiContentRealm;
 import ru.mhistory.realm.PoiRealm;
@@ -34,7 +35,6 @@ import ru.mhistory.realm.RealmFactory;
  */
 
 public class JsonToReal {
-    private final String LogTag = "JsonPaeser";
     private Uri uri;
 
     public JsonToReal(Uri uri) {
@@ -42,9 +42,8 @@ public class JsonToReal {
     }
 
     public boolean doIt() {
-        //todo return list<Poi>
         long startTime = System.currentTimeMillis();
-        Logger.d("Starting to parse the story file, start time is (%s, ms)", startTime);
+        Logger.d(LogType.Json, "Starting to parse the story file, start time is (%s, ms)", startTime);
         JsonReader jr = null;
         try {
             jr = new JsonReader(getFileInputStreamReader());
@@ -64,7 +63,7 @@ public class JsonToReal {
                 }
             }
             long finishTime = System.currentTimeMillis();
-            Logger.d("Finished to parse story file, finish time (%s, ms), time diff (%s, ms)",
+            Logger.d(LogType.Json, "Finished to parse story file, finish time (%s, ms), time diff (%s, ms)",
                     finishTime, finishTime - startTime);
         }
     }
@@ -72,7 +71,7 @@ public class JsonToReal {
     protected void readFromJson(@NonNull JsonReader jr) throws IOException {
         RealmList<PoiRealm> poi = new RealmList<>();
         List<PoiContentRealm> content = new LinkedList<>();
-        Logger.i(LogTag, "start parse json realm");
+        Logger.d(LogType.Json, "start parse json realm");
         jr.beginObject();
         jr.nextName();
         jr.nextString(); // sightseeing overview
@@ -176,9 +175,8 @@ public class JsonToReal {
                                 }
                             }
                             jr.endObject(); //content finish
-                            Logger.i(LogTag, "Load id=" + contentId + "   contentName" + contentName);
+                            Logger.d(LogType.Json, "Load id=%s contentName %s", contentId, contentName);
                             content.add(new PoiContentRealm().fromPoiContent(obj_id, new PoiContent(contentId, contentName, contentType, wow, text, contentAudio)));
-                          //  contents.add(new PoiContent(contentId, contentName, contentType, wow, text, contentAudio));
                         }
                         jr.endArray();//content array finish
                         break;
@@ -190,7 +188,7 @@ public class JsonToReal {
         }
         jr.endArray(); //point array finish
         jr.endObject();
-        Logger.i(LogTag, "finish parse json");
+        Logger.d(LogType.Json, "finish parse json");
         toRealm(poi, content);
     }
 

@@ -1,7 +1,6 @@
 package ru.mhistory.playback;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
@@ -13,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
 /**
@@ -33,31 +33,31 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     String strToPlay = "";
     HashMap<String, String> map = new HashMap<String, String>();
     HashMap<String, String> mapP = new HashMap<String, String>();
-    private final String typePlayTrack="Track";
-    private final String typePlayPreambula="Preambula";
+    private final String typePlayTrack = "Track";
+    private final String typePlayPreambula = "Preambula";
     private Handler mHandler = new Handler();
 
 
     private final int LonS = 13;
+    //todo вынести в конфиг?
     private long timeStartPlay;
     private int progress;
-    private String LogTag = "PlayerTTS";
 
     public AndroidTTSPlayer(Context context, @NonNull Callbacks callbacks, @NonNull PreambulaCallback preambulaCallback) {
-        this.context=context;
-        this.preambulaCallback=preambulaCallback;
-        textToSpeech = new TextToSpeech(context, this,"com.google.android.tts");
+        this.context = context;
+        this.preambulaCallback = preambulaCallback;
+        textToSpeech = new TextToSpeech(context, this, "com.google.android.tts");
         this.callbacks = callbacks;
         map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, typePlayTrack);
         mapP.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, typePlayPreambula);
         textToSpeech.setOnUtteranceProgressListener(this);
-        Logger.i(LogTag, textToSpeech.getDefaultEngine());
+        Logger.d(LogType.Player, textToSpeech.getDefaultEngine());
 
     }
 
     @Override
     public void prepareAsync(@NonNull String url) {
-        Log.i(LogTag, "prepareAsync from TTS " + url);
+        Logger.d(LogType.Player, "prepareAsync from TTS %s", url);
         checkState(State.IDLE);
         //Todo textToSpeech==null
         strTTS = url;
@@ -84,22 +84,20 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     @Override
     public void play() {
         checkState(State.READY, State.PAUSED);
-        Logger.i(LogTag, "play tts to " + strTTS);
+        Logger.d(LogType.Player, "play tts to " + strTTS);
         toPlay(strTTS);
 
     }
 
     private void toPlay(String strToPlay) {
-
         this.strToPlay = strToPlay;
-      //  textToSpeech.playSilentUtterance(1000,TextToSpeech.QUEUE_ADD,null);
         textToSpeech.speak(strToPlay, TextToSpeech.QUEUE_FLUSH, map);
-      //  if(!initStatus) toPlay(strToPlay);
     }
+
     public void toPlayPreambula(String strToPlay) {
         this.strToPlay = strToPlay;
         textToSpeech.speak(strToPlay, TextToSpeech.QUEUE_FLUSH, mapP);
-        }
+    }
 
     @Override
     public void pause() {
@@ -158,7 +156,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
     @Override
     public void onInit(int status) {
-        Logger.i(LogTag, "TTS init ");
+        Logger.d(LogType.Player, "TTS init ");
         if (status == TextToSpeech.SUCCESS) {
 
             Locale locale = new Locale("ru");
@@ -184,9 +182,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
         } catch (InterruptedException e) {
 
         }
-//        context.startService(new Intent(context, AudioService.class)
-//                .setAction(AudioService.Action.ENDED));
-       callbacks.onEnded();
+        callbacks.onEnded();
     }
 
 
@@ -204,32 +200,32 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
     @Override
     public void onStart(String s) {
-        switch(s){
+        Logger.d(LogType.Player, "TTS play %s", s);
+        switch (s) {
             case typePlayTrack:
                 state = State.PLAYING;
-                Logger.i(LogTag, "TTS Start");
                 timeStartPlay = System.currentTimeMillis();
                 mHandler.removeCallbacks(timer);
                 mHandler.postDelayed(timer, 1);
                 break;
             case typePlayPreambula:
-                  break;
+                break;
         }
 
     }
 
     @Override
     public void onDone(String s) {
-        switch(s){
+        Logger.d(LogType.Player, "tts finish %s", s);
+        switch (s) {
             case typePlayTrack:
                 onComplete();
-                Logger.i(LogTag, "tts Done ");
                 break;
             case typePlayPreambula:
-                 preambulaCallback.preambulaEnded();
+                preambulaCallback.preambulaEnded();
                 break;
         }
-          }
+    }
 
     /**
      * @param s

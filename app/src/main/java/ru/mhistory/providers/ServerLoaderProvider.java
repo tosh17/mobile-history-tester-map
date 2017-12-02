@@ -10,6 +10,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import ru.mhistory.common.util.FileUtil;
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
 /**
@@ -27,7 +28,7 @@ public class ServerLoaderProvider {
 
     public boolean unzip(String path,String zipname)throws IOException {
         final String LOG_TAG = "unZip";
-        Logger.i(LOG_TAG, "UnZip start " );
+        Logger.d(LogType.Load, "UnZip start " );
         InputStream is;
         ZipInputStream zis;
         try
@@ -60,7 +61,7 @@ public class ServerLoaderProvider {
             }
 
             zis.close();
-            Logger.i(LOG_TAG, "UnZip stop " );
+            Logger.d(LogType.Load, "UnZip stop " );
             FileUtil.listDir(path);
         }
         catch(IOException e)

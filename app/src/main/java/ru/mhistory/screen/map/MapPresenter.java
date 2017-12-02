@@ -34,6 +34,7 @@ import ru.mhistory.common.util.TimeUtil;
 import ru.mhistory.geo.GoogleApiLocationTracker;
 import ru.mhistory.geo.LatLng;
 import ru.mhistory.geo.LocationTracker;
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 import ru.mhistory.playback.AudioService;
 import ru.mhistory.playback.Preambula;
@@ -205,14 +206,14 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         float speed = 0;
         if (deltaTime != 0) speed = result[0] * 1000 / deltaTime;
         if (speed > conf.speedToMove && isStay == true) {
-            Logger.i("Map", "Начало движения");
+            Logger.d(LogType.Location, "Начало движения");
             conf.movementAngle = result[1];
             isStay = false;
         } else if (speed <= conf.speedToMove && isStay == false) {
-            Logger.i("Map", "Остоновились");
+            Logger.d(LogType.Location, "Остоновились");
             isStay = true;
         }
-        Logger.i("Map", "onLocationChanged " + "lat=" + latLng.latitude + ":lng" + latLng.longitude
+        Logger.d(LogType.Location, "onLocationChanged " + "lat=" + latLng.latitude + ":lng" + latLng.longitude
                 + " distance" + result[0] + "; angle=" + result[1] + "; speed=" + speed);
         currentLatLng = latLng;
         notifyUiOnLocationChanged(latLng);
@@ -221,11 +222,12 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     private void nextPoiFind(LatLng latLng) {
         if (isPlayerBlock) return;
-
-        // PoiSearchZoneResult pois = poiProvider.findPois(latLng, latestPois);
-        //  PoiSearchResult pois = PoiSearch.findPoi(latLng, latestPois, 5000, 10000);
         PoiSearchZoneResult pois = PoiSearch.findPoi(latLng, latestPois, conf);
-        Logger.i("Map", pois.toString(conf.movementAngle));
+        ThreadUtil.runOnUiThread(() -> {
+            if(isStay) fragment.setTest(pois.stayToString());
+            else fragment.setTest(pois.moveToString(conf.movementAngle));
+        });
+
         if (pois != null && !pois.isEmpty()) {
             pois.removeAll(processedPois);
             latestPois = pois.getAllPoi();
@@ -256,18 +258,10 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     //todo удалить после внедрения базы данных
     @Subscribe
     public void bdCompliteEvent(@NonNull BDCompliteEvent event) {
-        Logger.i("MapPresent", "База подготовлена");
+        Logger.d(LogType.App, "MapPresenter Base Complete ok");
         startTracking();
     }
 
-//    @UiThread
-//    public void setStoryFileUri(@Nullable Uri uri) {
-//        Logger.d(String.format("Story file is chosen (%s)", uri));
-//        poiProvider.setDelegate(uri != null
-//                ? new UriFileProviderDelegate(uri, new DefaultPoiFinder())
-//                : null);
-//        BusProvider.getInstance().post(new SetStoryFileEvent());
-//    }
 
     @UiThread
     private void updateUiWithPoi(@NonNull Poi poi,
@@ -372,8 +366,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     @Subscribe
     public void onTrackPlaybackEndedEvent(@NonNull TrackPlaybackEndedEvent event) {
-        //  Logger.d("Audio track playback completed, name = %s", event.trackName);
-        Logger.i("Player", "ended -> " + event.trackName);
+        Logger.d("Audio track playback completed, name = %s", event.trackName);
         isPlayerBlock = false;
         nextPoiFind(currentLatLng);
         locationTracker.startTracking();
@@ -421,8 +414,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             preambulaId = poi.objId;
             isPreabpula = true;
             preambula = Preambula.get(poiInfo.distanceTo,conf.movementAngle-poiInfo.angle)+" " + poi.name;
-            Logger.i("Preambula",preambula);
-        }
+          }
         isPlayerBlock = true;
         switch (audioTypeToPlay) {
             case MP3:

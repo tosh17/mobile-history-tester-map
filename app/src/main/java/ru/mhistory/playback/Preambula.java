@@ -9,8 +9,8 @@ public class Preambula {
     public static String get(float distance, float angle) {
         StringBuilder str = new StringBuilder();
         if (angle >= -45 && angle < 45) str.append("Прямо");
-        else if (angle >= 45 && angle < 135) str.append("Справа");
-        else if (angle >= -135 && angle < -45) str.append("Слева");
+        else if (angle >= 45 && angle < 135) str.append("Слева");
+        else if (angle >= -135 && angle < -45) str.append("Справа");
         else str.append("Позади");
         str.append(" ");
         if (distance < 100) {

@@ -29,10 +29,10 @@ import ru.mhistory.bus.event.TrackPlaybackEndedEvent;
 import ru.mhistory.bus.event.TrackProgressEvent;
 import ru.mhistory.common.util.FileUtil;
 import ru.mhistory.common.util.ThreadUtil;
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
 public class AudioService extends Service implements AudioPlayer.Callbacks, AudioPlayer.PreambulaCallback, AudioFocusable {
-    private String LogTag = "AudioService";
     private boolean isDebug = false;
     public static final String KEY_AUDIO_URL = "AUDIO_URL";
     public static final String KEY_IS_PREAMBULA = "IS_PREAMBULA";
@@ -175,7 +175,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 break;
             case Action.URL:
                 String url = intent.getExtras().getString(KEY_AUDIO_URL);
-                Logger.i(LogTag, "intent to mp3-> " + url);
+               Logger.d(LogType.Player, "intent to mp3-> " + url);
                 if (!TextUtils.isEmpty(url)) {
                     ttsPlayer.block(true);
                     if (intent.getExtras().getBoolean(KEY_IS_PREAMBULA)) {
@@ -186,7 +186,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 break;
             case Action.TEXT:
                 String text = intent.getExtras().getString(KEY_AUDIO_URL);
-                Logger.i(LogTag, "intent to tts-> " + text);
+               Logger.d(LogType.Player, "intent to tts-> " + text);
                 if (!TextUtils.isEmpty(text)) {
                     audioPlayer.block(true);
                     if (intent.getExtras().getBoolean(KEY_IS_PREAMBULA)) {
@@ -213,7 +213,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onPlayOrPauseAction() {
-        Logger.i(LogTag, "nPlayOrPauseAction -> " + getNotBlockPlayer().getClass().toString());
+       Logger.d(LogType.Player, "nPlayOrPauseAction -> " + getNotBlockPlayer().getClass().toString());
         if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING) {
             onPauseAction();
         } else {
@@ -222,7 +222,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onPlayAction() {
-        Logger.d("Play action received, player state (%s)", audioPlayer.getPlaybackState());
+        Logger.d(LogType.Player,"Play action received, player state (%s)", audioPlayer.getPlaybackState());
         if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PREPARING) {
 //            startPlayingAfterRetrieve = true;
             return;
@@ -235,7 +235,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onPauseAction() {
-        Logger.d("Pause action received, player state (%s)", getNotBlockPlayer().getPlaybackState());
+        Logger.d(LogType.Player,"Pause action received, player state (%s)", getNotBlockPlayer().getPlaybackState());
         if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PREPARING) {
             // If we are still retrieving media, clear the flag that indicates we should start
             // playing when we're ready
@@ -258,7 +258,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onStopAction() {
-        Logger.d("Stop action received...");
+        Logger.d(LogType.Player,"Stop action received...");
         sendPlaybackStopEvent();
         releaseResources(true);
         giveUpAudioFocus();
@@ -417,7 +417,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     @Override
     public void onReady() {
 
-        Logger.d("Playback is ready for (%s)", currentAudioTrackUrl);
+        Logger.d(LogType.Player,"Playback is ready for (%s)", currentAudioTrackUrl);
         updateNotification("playing...");
         startAudioTrackProgress();
         sendNextTrackInfoEvent();
@@ -427,7 +427,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
 
     @Override
     public void onEnded() {
-        Logger.i(LogTag, "Playback is ended for " + currentAudioTrackUrl);
+       Logger.d(LogType.Player, "Playback is ended for " + currentAudioTrackUrl);
         releaseResources(true);
         sendTrackPlaybackEndedEvent();
 

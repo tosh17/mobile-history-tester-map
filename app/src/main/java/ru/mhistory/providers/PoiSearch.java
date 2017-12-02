@@ -88,6 +88,7 @@ public class PoiSearch {
                 else if (!isRangeAngleMirror(conf.deltaAngleZona2, poiFromMoveAngle)
                         && isRangeAngleMirror(conf.deltaAngleZona3, poiFromMoveAngle))
                     poiResult.zone3.put(poiInfo, poi);
+                else poiResult.zone0.put(poiInfo, poi);
             }
         }
         return poiResult;

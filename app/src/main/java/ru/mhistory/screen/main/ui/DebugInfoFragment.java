@@ -13,6 +13,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.widget.Space;
+import android.text.Html;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -89,6 +90,13 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
     @BindDrawable(R.drawable.ic_player_play_button)
      Drawable playDrawable;
 
+
+    @BindView(R.id.textTest)
+    TextView textTest;
+    public void setTest(String s){
+
+        textTest.setText(Html.fromHtml(s));}
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -102,7 +110,7 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
     public View onCreateView(LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fragment_main_new, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_main_test, container, false);
         unbinder = ButterKnife.bind(this, rootView);
         initViews();
         return rootView;
@@ -349,8 +357,8 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_home, menu);
         super.onCreateOptionsMenu(menu, inflater);
-        tintMenuItem(menu.findItem(R.id.choose_story_file));
-        tintMenuItem(menu.findItem(R.id.clear_story_file));
+        //tintMenuItem(menu.findItem(R.id.choose_story_file));
+        //tintMenuItem(menu.findItem(R.id.clear_story_file));
     }
 
     private void tintMenuItem(MenuItem menuItem) {
@@ -363,12 +371,12 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.choose_story_file:
-                onChooseStoryFile();
-                return true;
-            case R.id.clear_story_file:
-                onClearStoryFile();
-                return true;
+//            case R.id.choose_story_file:
+//                onChooseStoryFile();
+//                return true;
+//            case R.id.clear_story_file:
+//                onClearStoryFile();
+//                return true;
         }
         return super.onOptionsItemSelected(item);
     }

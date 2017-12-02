@@ -18,6 +18,7 @@ import ru.mhistory.bus.BusProvider;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
 import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.geo.LatLng;
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
 /**
@@ -79,7 +80,7 @@ public class RealmFactory {
             realm.copyToRealm(p);
         }
         realm.commitTransaction();
-        Logger.i("Realm","Poi save");
+        Logger.d(LogType.Realm,"Poi save");
         realm.close();
     }
 
@@ -89,7 +90,7 @@ public class RealmFactory {
         for (PoiContentRealm c : content)
             realm.copyToRealm(c);
         realm.commitTransaction();
-        Logger.i("Realm","Content save");
+        Logger.d(LogType.Realm,"Content save");
         realm.close();
     }
 

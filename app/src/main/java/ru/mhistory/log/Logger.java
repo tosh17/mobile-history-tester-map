@@ -9,6 +9,20 @@ public class Logger {
     private static volatile boolean logToFile = false;
     private static volatile FileLogger fileLogger;
 
+
+    public static void shortD(LogType type,String msg,int lenght){
+        if(msg.length()>lenght) msg=msg.substring(0, lenght)+".....";
+        d(type,msg);
+    }
+    public static void d(LogType type,String msg, Object... args) {
+        if (isLoggingEnable()) {
+            try {
+                d(type.toString()+String.format(msg, args));
+            } catch (Exception e) {
+                d(type.toString()+msg);
+            }
+        }
+    }
     public static void d(String msg, Object... args) {
         if (isLoggingEnable()) {
             try {
@@ -213,12 +227,4 @@ public class Logger {
         fileLogger.stop();
     }
 
-    public static void i(String tag,String msg){
-
-      //  if(msg.length()>100)msg=msg.substring(0, 100)+".....";
-        Log.i("InformTag->"+tag,msg);
-        if (true) {
-            fileLogger.i("InformTag->"+tag, msg);
-        }
-    }
 }

@@ -8,6 +8,7 @@ import android.util.Log;
 import java.util.HashMap;
 import java.util.Locale;
 
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
 /**
@@ -16,7 +17,6 @@ import ru.mhistory.log.Logger;
 
 public class TtsToWav implements TextToSpeech.OnInitListener{
     TextToSpeech textToSpeech;
-    private String LogTag="PlayerTTS";
     TTSCallback callback;
     HashMap<String, String> map = new HashMap<String, String>();
     private long x;
@@ -32,13 +32,13 @@ public class TtsToWav implements TextToSpeech.OnInitListener{
             @Override
             public void onStart(String s) {
                 x=System.currentTimeMillis();
-                Logger.i(LogTag, "Start TTS generate size "+ text.length());
+                Logger.d(LogType.Player, "Start TTS generate size "+ text.length());
             }
 
             @Override
             public void onDone(String s) {
                 x=System.currentTimeMillis()-x;
-                Logger.i(LogTag, "Done TTS generate size "+ text.length()+ " time " + x);
+                Logger.d(LogType.Player, "Done TTS generate size "+ text.length()+ " time " + x);
                 callback.ttsDone("temp.wav");
             }
 
@@ -57,7 +57,7 @@ public class TtsToWav implements TextToSpeech.OnInitListener{
 
     @Override
     public void onInit(int status) {
-        Logger.i(LogTag, "TTS init ");
+        Logger.d(LogType.Player, "TTS init ");
         if (status == TextToSpeech.SUCCESS) {
 
             Locale locale = new Locale("ru");

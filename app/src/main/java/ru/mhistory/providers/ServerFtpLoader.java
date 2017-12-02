@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
 /**
@@ -18,8 +19,7 @@ import ru.mhistory.log.Logger;
  */
 
 public class ServerFtpLoader extends ServerLoaderProvider {
-    private final String LOG_TAG = "FtpLoader";
-   //Todo: сделать конфигуратор
+    //Todo: сделать конфигуратор
     private static String SERVER = "ftp.mhistory-ru.1gb.ru";
     private static int PORT = 21;
     private static String User = "mhapp";
@@ -59,18 +59,18 @@ public class ServerFtpLoader extends ServerLoaderProvider {
 
         try {
             ftp = new FTPClient();
-            Logger.i(LOG_TAG, "Try to connect " + server);
+            Logger.d(LogType.Load, "Try to connect %s",server);
             ftp.connect(server, portNumber);
-            Logger.i(LOG_TAG, "Connected. Reply: " + ftp.getReplyString());
+            Logger.d(LogType.Load, "Connected. Reply: %s",ftp.getReplyString());
 
             ftp.login(user, password);
-            Logger.i(LOG_TAG, "Logged in");
+            Logger.d(LogType.Load, "Logged in");
             ftp.setFileType(FTP.BINARY_FILE_TYPE);
             ftp.enterLocalPassiveMode();
             OutputStream outputStream = null;
             boolean success = false;
             try {
-                Logger.i(LOG_TAG, "Downloading");
+                Logger.d(LogType.Load, "Downloading");
                 outputStream = new BufferedOutputStream(new FileOutputStream(localFile));
                 success = ftp.retrieveFile(filename, outputStream);
             } finally {
@@ -78,11 +78,11 @@ public class ServerFtpLoader extends ServerLoaderProvider {
                     outputStream.close();
                 }
             }
-            Logger.i(LOG_TAG, "Downloading done with status:"+success);
+            Logger.d(LogType.Load, "Downloading done with status:"+success);
             return success;
         } finally {
             if (ftp != null) {
-                Logger.i(LOG_TAG, "client finish");
+                Logger.d(LogType.Load, "client finish");
                 ftp.logout();
                 ftp.disconnect();
             }

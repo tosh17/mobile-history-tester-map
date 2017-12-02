@@ -94,32 +94,52 @@ public final class PoiSearchZoneResult {
         return str.toString();
     }
 
-    public String toString(float currentAngle) {
-        StringBuilder str = new StringBuilder("Zona Stay:\n");
+    public String moveToString(float currentAngle) {
+        StringBuilder str = new StringBuilder("<br><br>");
         float angle;
-        for (PoiInfo p : stay.keySet()) {
-            angle = currentAngle-p.angle;
-
-            str.append(stay.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "\n");
+        str.append("<font color=#21610B>");
+        str.append("Статус Движение:<br>");
+        str.append("</font>");
+        str.append("<font color=#DF01D7>");
+        str.append("Zona 0:<br>");
+        for (PoiInfo p : zone0.keySet()) {
+            angle = Math.abs(p.angle - currentAngle);
+            angle = angle > 180 ? (angle - 360) : angle;
+            str.append(zone0.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "<br>");
         }
-        str.append("Zona 1:\n");
+        str.append("</font>");
+        str.append("<font color=#04B431>");
+        str.append("Zona 1:<br>");
         for (PoiInfo p : zone1.keySet()) {
             angle = Math.abs(p.angle - currentAngle);
             angle = angle > 180 ? (angle - 360) : angle;
-            str.append(zone1.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "\n");
+            str.append(zone1.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "<br>");
         }
-        str.append("Zona 2:\n");
+        str.append("</font>");
+        str.append("<font color=#0404B4>");
+        str.append("Zona 2:<br>");
         for (PoiInfo p : zone2.keySet()) {
             angle = Math.abs(p.angle - currentAngle);
             angle = angle > 180 ? (angle - 360) : angle;
-            str.append(zone2.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "\n");
+            str.append(zone2.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "<br>");
         }
-        str.append("Zona 3:\n");
+        str.append("</font>");
+        str.append("<font color=#FF8000>");
+        str.append("Zona 3:<br>");
         for (PoiInfo p : zone3.keySet()) {
             angle = Math.abs(p.angle - currentAngle);
             angle = angle > 180 ? (angle - 360) : angle;
-            str.append(zone3.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "\n");
+            str.append(zone3.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "<br>");
         }
+        str.append("</font>");
+        return str.toString();
+    }
+
+    public String stayToString(){
+        StringBuilder str = new StringBuilder("\n\n");
+        str.append("Статус Остановка:<br>");
+        for (PoiInfo p : stay.keySet())
+            str.append(stay.get(p).name + " distanse=" + p.distanceTo + "<br>");
         return str.toString();
     }
 }

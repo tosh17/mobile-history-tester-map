@@ -4,6 +4,7 @@ import android.support.annotation.NonNull;
 
 import java.io.File;
 
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
 public class FileUtil {
@@ -18,14 +19,13 @@ public class FileUtil {
     private FileUtil() {
     }
     public static void listDir(String path){
-        //String path = Environment.getExternalStorageDirectory().toString()+"/Pictures";
-        Logger.i("Files", "Path: " + path);
+        Logger.d(LogType.File, "Path: %s",path);
         File directory = new File(path);
         File[] files = directory.listFiles();
-        Logger.i("Files", "Size: "+ files.length);
+        Logger.d(LogType.File, "Size: %d",files.length);
         for (int i = 0; i < files.length; i++)
         {
-            Logger.i("Files", "FileName:" + files[i].getName());
+            Logger.d(LogType.File, "FileName: %s",files[i].getName());
         }
     }
 }
