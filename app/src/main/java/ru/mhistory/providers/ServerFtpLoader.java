@@ -33,6 +33,7 @@ public class ServerFtpLoader extends ServerLoaderProvider {
             @Override
             protected Boolean doInBackground(onServerLoadFinish... onFinishLoads) {
                 boolean status=false;
+
                 try {
                      status = downloadAndSaveFile(SERVER, PORT, User, Pass, FILE_NAME, file);
                     onFinishLoad=onFinishLoads[0];

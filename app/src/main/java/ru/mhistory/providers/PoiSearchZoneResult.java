@@ -12,6 +12,7 @@ import java.util.TreeMap;
 
 import api.vo.Poi;
 import api.vo.PoiInfo;
+import ru.mhistory.log.Logger;
 
 public final class PoiSearchZoneResult {
     public final SortedMap<PoiInfo, Poi> stay = new TreeMap<>();

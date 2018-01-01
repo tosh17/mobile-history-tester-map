@@ -12,6 +12,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 
+import ru.mhistory.bus.BusProvider;
+import ru.mhistory.bus.event.AppPrepareTTSCompliteEvent;
+import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
@@ -38,8 +41,8 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     private Handler mHandler = new Handler();
 
 
-    private final int LonS = 13;
-    //todo вынести в конфиг?
+    private int LetterPerSecond = 13; //количество знаков в секунду
+
     private long timeStartPlay;
     private int progress;
 
@@ -59,7 +62,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     public void prepareAsync(@NonNull String url) {
         Logger.d(LogType.Player, "prepareAsync from TTS %s", url);
         checkState(State.IDLE);
-        //Todo textToSpeech==null
+        if(textToSpeech==null)  textToSpeech = new TextToSpeech(context, this, "com.google.android.tts");
         strTTS = url;
         state = State.READY;
         callbacks.onReady();
@@ -117,18 +120,17 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
     @Override
     public void stop() {
-
+        textToSpeech.stop();
     }
 
     @Override
     public void release() {
-
         state = State.IDLE;
     }
 
     @Override
     public long getDuration() {
-        long duration = strTTS.length() / LonS;
+        long duration = strTTS.length() / LetterPerSecond;
         return duration;
     }
 
@@ -167,11 +169,13 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
                 Log.e("TTS", "Извините, этот язык не поддерживается");
             } else {
                 initStatus = true;
-
-            }
+                            }
         } else {
             Log.e("TTS", "Ошибка!");
         }
+        ThreadUtil.runOnUiThread(() -> {
+            BusProvider.getInstance().post(new AppPrepareTTSCompliteEvent(initStatus));
+        });
     }
 
     private void onComplete() {
@@ -192,7 +196,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
             int delta = strTTS.length() - strToPlay.length();
             int deltaprogress = 100 * delta / strTTS.length();
             int deltatime = (int) ((System.currentTimeMillis() - timeStartPlay) / 1000);
-            int d = (int) (100 * deltatime * LonS / strToPlay.length());
+            int d = (int) (100 * deltatime * LetterPerSecond / strToPlay.length());
             progress = deltaprogress + d;
             mHandler.postDelayed(timer, 100);
         }

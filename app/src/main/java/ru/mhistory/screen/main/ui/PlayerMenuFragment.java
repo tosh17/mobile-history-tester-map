@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -23,7 +24,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
@@ -41,7 +41,9 @@ import ru.mhistory.common.util.PermissionUtils;
 
 import ru.mhistory.screen.map.MapPresenter;
 
-public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChangeListener{
+public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarChangeListener{
+
+
     private static final int REQUEST_STORY_PICKER = 0;
     private static final int REQUEST_LOCATION_PERMISSIONS = 100;
     int wDev, hDev;
@@ -55,12 +57,12 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
 //    NavigationView nv;
     @BindView(R.id.menuLinerFriend)
     LinearLayout layoutFriend;
-    @BindView(R.id.textViewPlayAgain)
-    TextView textViewPlayAgain;
-    @BindView(R.id.textViewPlayAbout)
-    TextView textViewPlayAbout;
-    @BindView(R.id.textViewNotPause)
-    TextView textViewNotPause;
+//    @BindView(R.id.textViewPlayAgain)
+//    TextView textViewPlayAgain;
+//    @BindView(R.id.textViewPlayAbout)
+//    TextView textViewPlayAbout;
+//    @BindView(R.id.textViewNotPause)
+//    TextView textViewNotPause;
     @BindView(R.id.lTrackInfo)
     LinearLayout layoutTrackFullInfo;
     @BindView(R.id.spaceTrackInfo)
@@ -94,8 +96,8 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
     @BindView(R.id.textTest)
     TextView textTest;
     public void setTest(String s){
-
-        textTest.setText(Html.fromHtml(s));}
+        textTest.setText("Max distance to stay"+(long)presenter.maxDistance+"\n");
+        textTest.append(Html.fromHtml(s));}
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -110,9 +112,10 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
     public View onCreateView(LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.fragment_main_test, container, false);
+       // View rootView = inflater.inflate(R.layout.fragment_menu_player, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_main_test_last, container, false);
         unbinder = ButterKnife.bind(this, rootView);
-        initViews();
+        //initViews();
         return rootView;
     }
 
@@ -129,7 +132,7 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
 //       lp.height =hDev;
 
         //Размер Добавить друзей 10%
-        LinearLayout.LayoutParams lpFriend = (LinearLayout.LayoutParams) layoutFriend.getLayoutParams();
+        ConstraintLayout.LayoutParams lpFriend = (ConstraintLayout.LayoutParams) layoutFriend.getLayoutParams();
         lpFriend.height = (int) (hDev * friendPersent); //10%
         //Добавить отступ для статусбар
 //        if(android.os.Build.VERSION.SDK_INT >=android.os.Build.VERSION_CODES.LOLLIPOP)
@@ -144,11 +147,11 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
 //        }
 
         //Размер кнопок для вариантов прослушивани
-        llsetH(textViewPlayAgain, (int) (hDev * buttonPlayerAdv));
-
-        llsetH(textViewPlayAbout, (int) (hDev * buttonPlayerAdv));
-
-        llsetH(textViewNotPause, (int) (hDev * buttonPlayerAdv));
+//        llsetH(textViewPlayAgain, (int) (hDev * buttonPlayerAdv));
+//
+//        llsetH(textViewPlayAbout, (int) (hDev * buttonPlayerAdv));
+//
+//        llsetH(textViewNotPause, (int) (hDev * buttonPlayerAdv));
 
         //Размер TrackInfo
         LinearLayout.LayoutParams lpTrackFullInfo = (LinearLayout.LayoutParams) layoutTrackFullInfo.getLayoutParams();
@@ -377,7 +380,11 @@ public class DebugInfoFragment extends Fragment implements SeekBar.OnSeekBarChan
 //            case R.id.clear_story_file:
 //                onClearStoryFile();
 //                return true;
+
         }
+        SettingFragment d = new SettingFragment();
+       // d.setTargetFragment(this,5);
+        d.show(getFragmentManager(),"");
         return super.onOptionsItemSelected(item);
     }
 

@@ -3,7 +3,6 @@ package ru.mhistory.screen.map;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
@@ -11,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -49,7 +49,7 @@ import ru.mhistory.BuildConfig;
 import ru.mhistory.Prefs;
 import ru.mhistory.R;
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.BDCompliteEvent;
+import ru.mhistory.bus.event.AppPrepareBDCompliteEvent;
 import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
 import ru.mhistory.bus.event.PoiFoundEvent;
@@ -61,10 +61,13 @@ import ru.mhistory.bus.event.StartTrackingEvent;
 import ru.mhistory.bus.event.StopTrackingEvent;
 import ru.mhistory.bus.event.TrackPlaybackEndedEvent;
 import ru.mhistory.common.util.AppLaunchChecker;
+import ru.mhistory.common.util.FileUtil;
 import ru.mhistory.common.util.PermissionUtils;
 import ru.mhistory.common.util.UiUtil;
 import ru.mhistory.geo.LocationAccuracy;
 import ru.mhistory.geo.LocationRequestDefaults;
+import ru.mhistory.log.FileLogger;
+import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 import ru.mhistory.playback.AudioService;
 import ru.mhistory.provider.PoiProviderConfig;
@@ -132,6 +135,8 @@ public class MapActivity
     }
 
     private void toInitService() {
+      //  FileUtil.verifyStoragePermissions(this);
+        Logger.start();
         startService(new Intent(this, AudioService.class)
                 .setAction(AudioService.Action.INIT));
         RealmFactory.getInstance(getApplicationContext());
@@ -299,7 +304,12 @@ public class MapActivity
         mapView.setShowSearchingRadius(showSearchingRadius);
         mapView.setSearchingRadius(new PoiProviderConfig().getMaxRadiusInMeters());
     }
-
+    public int getZoomLevel(double radius) {
+        double scale = radius ;
+        int zoomLevel = (int) (22 - Math.log(scale) / Math.log(2));
+        zoomLevel=14;
+        return zoomLevel;
+    }
     private boolean checkAppLaunch() {
         int lastSeenVersion = prefs.getInt(Prefs.KEY_LAST_SEEN_VERSION, -1);
         int appLaunch = AppLaunchChecker.checkAppLaunch(lastSeenVersion);
@@ -312,7 +322,7 @@ public class MapActivity
                 break;
             case AppLaunchChecker.REGULAR:
                 //TODO: check update
-                BusProvider.getInstance().post(new BDCompliteEvent());
+                BusProvider.getInstance().post(new AppPrepareBDCompliteEvent());
                 break;
         }
         return appLaunch == AppLaunchChecker.FIRST_TIME;
@@ -320,8 +330,14 @@ public class MapActivity
 
     private void loadBD() {
             //todo заменить имена файлов
-            String tempName = "temp.zip";
+            String tempName = "cache/temp.zip";
             String jsonName = "34pois.json";
+        File cachDir = new File(getApplicationContext().getFilesDir() + "/cache");
+        if (!cachDir.exists()) {
+            Log.d("MAKE DIR", cachDir.mkdir() + "");
+        }
+         FileUtil.listDir(getApplicationContext().getFilesDir().getAbsolutePath());
+
             ServerLoaderProvider serverLoader = new ServerFtpLoader();
             File file = new File(getApplicationContext().getFilesDir() + "/" + tempName);
             serverLoader.load(file, new ServerLoaderProvider.onServerLoadFinish() {
@@ -330,7 +346,6 @@ public class MapActivity
                     try {
                         serverLoader.unzip(getApplicationContext().getFilesDir().toString() + "/", tempName);
                         Uri uri = Uri.fromFile(new File(getApplicationContext().getFilesDir() + "/" + jsonName));
-                        //TODO добавить запись в базу
                         RealmFactory.getInstance(getApplicationContext());
                         new JsonToReal(uri).doIt();
                          } catch (IOException e) {
@@ -445,14 +460,20 @@ public class MapActivity
     }
 
     private void cameraToLatestPosition() {
+        String str =prefs.getString(Prefs.KEY_LATEST_CAMERA_POSITION);
         Optional.ofNullable(new Gson().fromJson(
-                prefs.getString(Prefs.KEY_LATEST_CAMERA_POSITION), CameraPosition.class))
-                .ifPresent(latestCameraPosition -> googleMap.moveCamera(
-                        CameraUpdateFactory.newCameraPosition(latestCameraPosition)));
+                str, CameraPosition.class))
+                .ifPresent(latestCameraPosition -> {
+
+                    googleMap.moveCamera(
+                        CameraUpdateFactory.newCameraPosition(latestCameraPosition));
+
+                });
     }
 
     @Override
     public void onLocationChanged(@NonNull Location location) {
+        Logger.d(LogType.Location,"Map   "+location.toString());
         updateMyLocation(location);
         mapView.setMyLocation(location);
         cameraToLatLng(new LatLng(location.getLatitude(), location.getLongitude()));
@@ -560,7 +581,8 @@ public class MapActivity
     public void onSetPoiRadiusEvent(@NonNull SetMaxPoiRadiusEvent event) {
         Logger.d(String.format("Set poi radius event received, radius = (%s)", event.radiusMeters));
         mapView.setSearchingRadius(event.radiusMeters);
-    }
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(getZoomLevel(event.radiusMeters*4/3)), 2000, null);
+         }
 
     @Subscribe
     public void onTrackPlaybackEndedEvent(@NonNull TrackPlaybackEndedEvent event) {

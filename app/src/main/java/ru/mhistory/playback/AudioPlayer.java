@@ -39,7 +39,7 @@ public interface AudioPlayer {
         void onEnded();
 
         boolean onError();
-        //TODO void onBlock(boolean);
+
     }
     interface PreambulaCallback{
        void preambulaEnded();

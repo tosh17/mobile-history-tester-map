@@ -114,11 +114,7 @@ public class RealmFactory {
             }
         realm.close();
         realm1.close();
-        //todo пересмотреть логику
-        Map<LatLng, Poi> cache=new HashMap<>();
-         for(Poi p:pois)cache.put(new LatLng(p.latitude,p.longitude),p);
-        ThreadUtil.runOnUiThread(() ->
-                BusProvider.getInstance().post(new PoiCacheAvailableEvent(cache)));
+
         return pois;
     }
 }

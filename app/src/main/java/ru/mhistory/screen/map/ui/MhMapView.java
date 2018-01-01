@@ -2,6 +2,7 @@ package ru.mhistory.screen.map.ui;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.location.Location;
 import android.os.Bundle;
@@ -10,7 +11,6 @@ import android.support.annotation.UiThread;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -31,7 +31,7 @@ import ru.mhistory.R;
 import ru.mhistory.common.util.UiUtil;
 import ru.mhistory.geo.LatLng;
 
-public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickListener,GoogleMap.OnCameraMoveListener {
+public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickListener, GoogleMap.OnCameraMoveListener {
     public GoogleMap googleMap;
     private MapView mapViewDelegate;
 
@@ -142,11 +142,13 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                 = new com.google.android.gms.maps.model.LatLng(location.getLatitude(),
                 location.getLongitude());
         if (myLocationMarker == null) {
+            // Маркер мая локация
             Bitmap bitmap = UiUtil.drawableToBitmap(getContext(), R.drawable.my_location);
             myLocationMarker = googleMap.addMarker(new MarkerOptions()
                     .position(latLng)
                     .anchor(0.5f, 0.5f)
                     .icon(BitmapDescriptorFactory.fromBitmap(bitmap)));
+            myLocationMarker.setRotation(45);
         } else {
             myLocationMarker.setPosition(latLng);
         }
@@ -191,6 +193,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                     = new com.google.android.gms.maps.model.LatLng(myLocation.getLatitude(),
                     myLocation.getLongitude());
             if (searchingRadiusCircle == null) {
+               //Круг поиска
                 searchingRadiusCircle = googleMap.addCircle(new CircleOptions()
                         .center(latLng)
                         .radius(searchingRadiusMeters)
@@ -198,6 +201,8 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                         .strokeColor(ContextCompat.getColor(getContext(), R.color.accuracy_stroke))
                         .fillColor(ContextCompat.getColor(getContext(), R.color.accuracy_fill))
                         .clickable(false));
+
+
             } else {
                 searchingRadiusCircle.setCenter(latLng);
                 searchingRadiusCircle.setRadius(searchingRadiusMeters);
@@ -233,7 +238,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
             for (Map.Entry<ru.mhistory.geo.LatLng, MarkerOptions> entry : markerOptions.entrySet()) {
                 Marker poiMarker = googleMap.addMarker(entry.getValue());
                 poiMarker.setTag(entry.getKey());
-                 markers.put(entry.getKey(), poiMarker);
+                markers.put(entry.getKey(), poiMarker);
             }
         } else {
             if (currentPoi != null) {
@@ -367,5 +372,6 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
 
 
     }
+
 
 }

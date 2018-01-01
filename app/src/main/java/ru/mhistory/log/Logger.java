@@ -5,8 +5,8 @@ import android.text.TextUtils;
 import android.util.Log;
 
 public class Logger {
-    private static volatile boolean loggingEnable = false;
-    private static volatile boolean logToFile = false;
+    private static volatile boolean loggingEnable = true;
+    private static volatile boolean logToFile = true;
     private static volatile FileLogger fileLogger;
 
 
@@ -17,7 +17,7 @@ public class Logger {
     public static void d(LogType type,String msg, Object... args) {
         if (isLoggingEnable()) {
             try {
-                d(type.toString()+String.format(msg, args));
+                d(type.toString()+"->"+String.format(msg, args));
             } catch (Exception e) {
                 d(type.toString()+msg);
             }
@@ -133,9 +133,11 @@ public class Logger {
 
     public static void d(String message) {
         if (isLoggingEnable()) {
+
             final String tag = extractClassName(METHOD_D);
             final String msg = buildMessageString(METHOD_D, message);
             Log.d(tag, msg);
+
             if (isLogToFile()) {
                 fileLogger.d(tag, msg);
             }

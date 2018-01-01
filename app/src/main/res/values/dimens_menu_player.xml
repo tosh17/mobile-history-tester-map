@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="mp_margin_1">5dp</dimen>
+    <dimen name="mp_margin_2">10dp</dimen>
+    <dimen name="mp_margin_3">16dp</dimen>
+    <dimen name="mp_margin_4">24dp</dimen>
+    <dimen name="mp_margin_between_ll">2dp</dimen>
+
+    <dimen name="mp_percent_friend">8</dimen>
+
+    <dimen name="mp_icon_size_h">24dp</dimen>
+    <dimen name="mp_icon_size_w_feedback">30dp</dimen>
+
+    <dimen name="mp_icon_size_h_adv_player">36dp</dimen>
+    <dimen name="mp_margin_h_adv_player_line">6dp</dimen>
+    <dimen name="mp_size_h_adv_player_line">3dp</dimen>
+
+</resources>

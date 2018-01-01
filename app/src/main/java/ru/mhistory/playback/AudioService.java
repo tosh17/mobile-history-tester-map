@@ -459,6 +459,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void sendTrackDurationsUpdateEvent(long currentDuration, long totalDuration) {
+//todo продумать логику для 0
+        totalDuration=totalDuration==0?1:totalDuration;
         BusProvider.getInstance().post(new TrackProgressEvent(currentDuration, totalDuration));
     }
 

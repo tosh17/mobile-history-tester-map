@@ -1,12 +1,13 @@
 package ru.mhistory.log;
 
+import android.os.Environment;
 import android.text.format.Time;
 import android.util.Log;
 
 public class FileLogger {
 
     private static volatile FileLogger instance;
-
+    public static String patchLogDir= Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
     public static FileLogger from() {
         if (instance == null) {
             synchronized (FileLogger.class) {
@@ -26,7 +27,7 @@ public class FileLogger {
     }
 
     public static String getLogsDirPath() {
-        return "";
+        return patchLogDir;
     }
 
     public static String getLogFilePath() {

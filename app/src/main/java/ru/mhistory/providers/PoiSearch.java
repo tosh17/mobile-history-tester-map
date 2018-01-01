@@ -79,8 +79,10 @@ public class PoiSearch {
         for (Poi poi : pois) {
             PoiInfo poiInfo = getPoiInfo(current.latitude, current.longitude, poi.latitude, poi.longitude);
             float poiFromMoveAngle = conf.movementAngle - poiInfo.angle;
+           //Todo после выбора алгоритма оптимизмровать поиск
             if (poiInfo.distanceTo <= conf.radiusStay) {
-                poiResult.stay.put(poiInfo, poi);
+                poiResult.stay.put(poiInfo, poi);}
+            if (poiInfo.distanceTo <= conf.radiusZone3) {
                 if (poiInfo.distanceTo <= conf.radiusZone1) poiResult.zone1.put(poiInfo, poi);
                 else if (poiInfo.distanceTo <= conf.radiusZone2
                         && isRangeAngleMirror(conf.deltaAngleZona2, poiFromMoveAngle))

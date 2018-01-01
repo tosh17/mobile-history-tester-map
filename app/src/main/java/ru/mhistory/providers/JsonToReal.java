@@ -23,7 +23,7 @@ import api.vo.PoiContent;
 import io.realm.RealmList;
 import ru.mhistory.MobileHistoryApp;
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.BDCompliteEvent;
+import ru.mhistory.bus.event.AppPrepareBDCompliteEvent;
 import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 import ru.mhistory.realm.PoiContentRealm;
@@ -196,7 +196,7 @@ public class JsonToReal {
         RealmFactory factory = RealmFactory.getInstance();
         factory.savePoi(poi);
         factory.SaveContent(content);
-        BusProvider.getInstance().post(new BDCompliteEvent());
+        BusProvider.getInstance().post(new AppPrepareBDCompliteEvent());
 
     }
 
