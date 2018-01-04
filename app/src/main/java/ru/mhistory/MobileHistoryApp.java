@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Environment;
+import android.support.multidex.MultiDex;
 import android.widget.Toast;
 
 import ru.mhistory.common.util.FileUtil;
@@ -21,6 +22,7 @@ public class MobileHistoryApp extends Application {
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+        MultiDex.install(this);
         context = this;
     }
 

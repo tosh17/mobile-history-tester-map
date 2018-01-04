@@ -12,7 +12,7 @@ public class SearchConf {
     public int searchTimeUpdate=1;
     //todo настраевоемое или расчетное?
     public boolean isStayPlay = true;
-    public int searchSquare = 100000;
+    public int searchSquare = 1000000;
     public int reSearchSquare = 50000;
 
     public int deltaDistanceToTracking = 100;

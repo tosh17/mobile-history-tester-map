@@ -71,8 +71,9 @@ android {
         versionName _versionName
         multiDexEnabled true
         resValue "string", "google_maps_key", "AIzaSyAv8wonnqp3qWJZUYx32R53pCSDoIaMieA"
-
-
+    }
+    dexOptions {
+        javaMaxHeapSize "4g"
     }
     buildTypes {
         debug {
@@ -110,6 +111,7 @@ dependencies {
     compile "com.google.android.gms:play-services-location:$_gmsVersion"
     compile "com.google.android.gms:play-services-places:$_gmsVersion"
     compile "com.google.maps.android:android-maps-utils:$_mapsUtils"
+    compile 'com.android.support:multidex:1.0.1'
     compile "com.google.dagger:dagger:$_daggerVersion"
     annotationProcessor "com.google.dagger:dagger-compiler:$_daggerVersion"
     debugCompile "com.squareup.leakcanary:leakcanary-android:$_leakcanaryVersion"

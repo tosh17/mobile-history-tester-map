@@ -143,7 +143,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                 location.getLongitude());
         if (myLocationMarker == null) {
             // Маркер мая локация
-            Bitmap bitmap = UiUtil.drawableToBitmap(getContext(), R.drawable.my_location);
+            Bitmap bitmap = UiUtil.drawableToBitmap(getContext(), R.drawable.ic_location_arrow_icon);
             myLocationMarker = googleMap.addMarker(new MarkerOptions()
                     .position(latLng)
                     .anchor(0.5f, 0.5f)

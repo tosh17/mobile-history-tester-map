@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+   >
 
     <LinearLayout
         android:id="@+id/menuLinerFriend"
@@ -14,8 +15,7 @@
         android:orientation="horizontal"
         app:layout_constraintEnd_toStartOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        >
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:layout_width="@dimen/mp_icon_size_h"
@@ -30,7 +30,7 @@
             android:layout_gravity="center_vertical"
             android:layout_marginLeft="@dimen/nv_friend_r_margin"
             android:layout_weight="1"
-            android:text="@string/nv_friend_share"
+            android:text="@string/mp_friend_share"
             android:textSize="@dimen/nv_friend_text_size" />
 
         <ImageView
@@ -47,15 +47,16 @@
             android:layout_marginRight="@dimen/mp_margin_4"
             app:srcCompat="@drawable/ic_player_menu_share_icon" />
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/menuLinerADW"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/mp_margin_between_ll"
-        app:layout_constraintTop_toBottomOf="@id/menuLinerFriend"
         android:background="@color/google_adw"
         android:elevation="2dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/menuLinerFriend">
 
         <TextView
             android:layout_width="wrap_content"
@@ -89,18 +90,20 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/mp_margin_between_ll"
-        app:layout_constraintTop_toBottomOf="@id/menuLinerADW"
         android:background="@android:color/white"
-        android:paddingTop="@dimen/mp_margin_h_adv_player_line"
         android:orientation="horizontal"
-        android:weightSum="3">
+        android:paddingTop="@dimen/mp_margin_h_adv_player_line"
+        android:weightSum="3"
+        app:layout_constraintTop_toBottomOf="@id/menuLinerADW">
 
         <LinearLayout
-            android:id="@+id/llButtonRefresh"
+            android:id="@+id/RefreshButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:background="@drawable/ripple_white"
+            android:clickable="true">
 
             <ImageView
                 android:layout_width="@dimen/mp_icon_size_h_adv_player"
@@ -110,15 +113,16 @@
                 app:srcCompat="@drawable/ic_player_menu_refresh_icon" />
 
             <ImageView
-                android:layout_marginTop="@dimen/mp_margin_h_adv_player_line"
+                android:id="@+id/RefreshOn"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/mp_size_h_adv_player_line"
-                android:background="@color/colorAccent"
+                android:layout_marginTop="@dimen/mp_margin_h_adv_player_line"
+                android:background="@color/mp_button_on"
                 android:scaleType="fitXY" />
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/llButtonLisentAbout"
+            android:id="@+id/listenPoiButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -131,10 +135,11 @@
                 app:srcCompat="@drawable/ic_player_menu_listen_poi_icon" />
 
             <ImageView
-                android:layout_marginTop="@dimen/mp_margin_h_adv_player_line"
+                android:id="@+id/listenPoiOn"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/mp_size_h_adv_player_line"
-                android:background="@color/colorAccent"
+                android:layout_marginTop="@dimen/mp_margin_h_adv_player_line"
+                android:background="@color/mp_button_on"
                 android:scaleType="fitXY" />
         </LinearLayout>
 
@@ -153,17 +158,78 @@
                 app:srcCompat="@drawable/ic_player_menu_repeat_play_icon" />
 
             <ImageView
-                android:layout_marginTop="@dimen/mp_margin_h_adv_player_line"
-                android:visibility="invisible"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/mp_size_h_adv_player_line"
-                android:background="@color/colorAccent"
-                android:scaleType="fitXY" />
+                android:layout_marginTop="@dimen/mp_margin_h_adv_player_line"
+                android:background="@color/mp_button_on"
+                android:scaleType="fitXY"
+                android:visibility="invisible" />
         </LinearLayout>
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/layoutCategory"
+        android:layout_width="385dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="2dp"
+        android:layout_marginTop="2dp"
+        android:background="@android:color/white"
+        android:orientation="vertical"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@id/lPlayer"
+        app:layout_constraintTop_toBottomOf="@id/menuLinerPlayerAdv"
+        app:layout_constraintVertical_bias="0.0">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/mp_margin_1"
+                android:layout_weight="1"
+                android:background="@color/colorBgTrackInfo1">
+
+                <ImageView
+                    android:layout_width="@dimen/mp_icon_size_h_adv_player"
+                    android:layout_height="@dimen/mp_icon_size_h_adv_player"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginRight="@dimen/mp_margin_3"
+                    app:srcCompat="@drawable/ic_player_category_culture_icon" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="КУльтура" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/mp_margin_1"
+                android:layout_weight="1"
+                android:background="@color/colorBgTrackInfo3">
+
+                <ImageView
+                    android:layout_width="@dimen/mp_icon_size_h_adv_player"
+                    android:layout_height="@dimen/mp_icon_size_h_adv_player"
+                    android:layout_gravity="center_vertical|end"
+                    android:layout_marginRight="@dimen/mp_margin_3"
+                    app:srcCompat="@drawable/ic_player_category_history_icon" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="История" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/layoutPoiInfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="2dp"
@@ -185,7 +251,8 @@
             android:scaleType="center"
             app:backgroundTint="@color/colorBtn"
             app:fabSize="auto"
-            app:srcCompat="@drawable/ic_player_prev_track"
+            android:rotation="180"
+            app:srcCompat="@drawable/ic_player_controll_next_track_button"
             tools:ignore="VectorDrawableCompat" />
 
         <android.support.v4.widget.Space
@@ -239,7 +306,7 @@
             android:scaleType="center"
             app:backgroundTint="@color/colorBtn"
             app:fabSize="auto"
-            app:srcCompat="@drawable/ic_player_next_track"
+            app:srcCompat="@drawable/ic_player_controll_next_track_button"
             tools:ignore="VectorDrawableCompat" />
 
         <android.support.v4.widget.Space
@@ -251,16 +318,18 @@
 
     <LinearLayout
         android:id="@+id/lPlayer"
-        android:layout_weight="5"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/nv_mardin"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginBottom="@dimen/nv_player_margin_bottom"
-        android:background="@color/colorPlayerBg"
+        android:layout_marginBottom="26dp"
+        android:layout_weight="5"
+        android:background="@android:color/white"
         android:elevation="2dp"
         android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@id/spaceBottom"
+        tools:ignore="MissingConstraints"
         tools:layout_editor_absoluteX="3dp">
+
 
         <TextView
             android:id="@+id/textViewPlayerTrackInfo"
@@ -274,7 +343,6 @@
             android:scrollHorizontally="true"
             android:singleLine="true"
             android:text="4/17 Интересные факты о траля-ля траляля бегущая строка"
-            android:textColor="@android:color/white"
             android:textSize="@dimen/nv_player_track_info_text_size" />
 
         <RelativeLayout
@@ -284,22 +352,19 @@
             <SeekBar
                 android:id="@+id/seekBarPlayer"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/nv_player_seekbar_size"
+                android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
-                android:layout_marginLeft="@dimen/nv_player_seekbar_margin"
-                android:layout_marginRight="@dimen/nv_player_seekbar_margin"
                 android:max="100"
-                android:progress="25"
-                android:progressDrawable="@drawable/seekbar_progress"
-                android:thumb="@drawable/thumb" />
+                android:progress="25" />
 
             <TextView
                 android:id="@+id/textViewPlayerCurrentTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
-                android:layout_centerHorizontal="true"
-                android:layout_marginLeft="@dimen/nv_player_text_time_margin"
+                android:layout_alignTop="@id/seekBarPlayer"
+                android:layout_marginLeft="@dimen/mp_margin_2"
+                android:layout_marginTop="12sp"
                 android:text="0:35"
                 android:textSize="@dimen/nv_player_text_time_size"
                 tools:ignore="RtlCompat" />
@@ -309,8 +374,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:layout_centerHorizontal="true"
-                android:layout_marginRight="@dimen/nv_player_text_time_margin"
+                android:layout_alignTop="@id/seekBarPlayer"
+                android:layout_marginRight="@dimen/mp_margin_2"
+                android:layout_marginTop="12sp"
                 android:text="-1:54"
                 android:textSize="@dimen/nv_player_text_time_size"
                 tools:ignore="RtlCompat" />
@@ -320,47 +386,105 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/nv_player_control_margin_bottom"
+            android:layout_marginLeft="@dimen/mp_margin_1"
+            android:layout_marginRight="@dimen/mp_margin_1"
             android:layout_marginTop="@dimen/nv_player_control_margin_top"
-            android:orientation="horizontal"
-            android:paddingLeft="@dimen/nv_player_control_margin_lr"
-            android:paddingRight="@dimen/nv_player_control_margin_lr">
+            android:orientation="horizontal">
 
-
-            <ImageView
-                android:id="@+id/imageViewFF"
-                android:layout_width="@dimen/nv_player_control_icon_size"
-                android:layout_height="@dimen/nv_player_control_icon_size"
-                android:layout_weight="1"
-                app:srcCompat="@drawable/ic_player_ff_button"
-
-                tools:ignore="VectorDrawableCompat" />
-
-            <ImageView
-                android:id="@+id/imageViewPausePlay"
-                android:layout_width="@dimen/nv_player_control_icon_size"
-                android:layout_height="@dimen/nv_player_control_icon_size"
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="left"
+                android:layout_marginRight="20dp"
                 android:layout_weight="2"
-                app:srcCompat="@drawable/ic_player_pause_button"
-                tools:ignore="VectorDrawableCompat" />
+                android:background="@drawable/ripple_white"
+                android:clickable="true">
 
-            <ImageView
-                android:id="@+id/imageViewRew"
-                android:layout_width="@dimen/nv_player_control_icon_size"
-                android:layout_height="@dimen/nv_player_control_icon_size"
-                android:layout_weight="1"
-                app:srcCompat="@drawable/ic_player_rew_button"
-                tools:ignore="VectorDrawableCompat" />
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitXY"
+                    app:srcCompat="@mipmap/button_fon" />
+
+                <ImageView
+                    android:id="@+id/imageViewFF"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="1"
+                    android:rotation="180"
+                    app:srcCompat="@drawable/ic_player_controll_next_track_button"
+                    tools:ignore="VectorDrawableCompat" />
+
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/buttonPausePlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                android:layout_weight="2"
+                android:background="@drawable/ripple_white"
+                android:clickable="true">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitXY"
+                    app:srcCompat="@mipmap/button_fon" />
+
+                <ImageView
+                    android:id="@+id/imageViewPausePlay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_player_controll_play_button"
+                    tools:ignore="VectorDrawableCompat" />
+
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="right"
+                android:layout_marginLeft="20dp"
+                android:layout_weight="2"
+                android:background="@drawable/ripple_white"
+                android:clickable="true">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="fitXY"
+                    app:srcCompat="@mipmap/button_fon" />
+
+                <ImageView
+                    android:id="@+id/imageViewRew"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_player_controll_next_track_button"
+                    tools:ignore="VectorDrawableCompat" />
+
+            </FrameLayout>
+
         </LinearLayout>
     </LinearLayout>
 
     <Space
+        android:id="@+id/spaceBottom"
         android:layout_width="match_parent"
-        android:layout_height="26dp" />
+        android:layout_height="26dp"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
     <TextView
         android:id="@+id/textTest"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:elevation="100dp"
         android:textSize="20sp"
         android:visibility="gone" />
 </android.support.constraint.ConstraintLayout>

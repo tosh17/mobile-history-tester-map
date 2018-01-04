@@ -1,6 +1,7 @@
 package ru.mhistory.screen.main.ui;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -14,6 +15,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.widget.Space;
+import android.support.v7.app.AlertDialog;
 import android.text.Html;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -24,6 +26,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
@@ -48,21 +51,32 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     private static final int REQUEST_LOCATION_PERMISSIONS = 100;
     int wDev, hDev;
     float friendPersent = 0.10f;
-    float buttonPlayerAdv = 0.11f;
+
 
     private MapPresenter presenter;
     private Unbinder unbinder;
 
-    //    @BindView(R.id.nav_view)
-//    NavigationView nv;
     @BindView(R.id.menuLinerFriend)
     LinearLayout layoutFriend;
-//    @BindView(R.id.textViewPlayAgain)
-//    TextView textViewPlayAgain;
-//    @BindView(R.id.textViewPlayAbout)
-//    TextView textViewPlayAbout;
-//    @BindView(R.id.textViewNotPause)
-//    TextView textViewNotPause;
+
+
+    @BindView(R.id.RefreshButton) //Refresh button
+    LinearLayout buttonRefresh;
+    @BindView(R.id.RefreshOn)
+    ImageView buttonRefreshOn;
+    boolean isOnButtonRefresh=true;
+
+    @BindView(R.id.listenPoiButton)
+    LinearLayout buttonListenPoi;
+    @BindView(R.id.listenPoiOn)
+    ImageView buttonListenPoiOn;
+    boolean isOnButtonListenPoi=false;
+
+    @BindView(R.id.layoutPoiInfo)
+    LinearLayout layoutPoiInfo;
+    @BindView(R.id.layoutCategory)
+    LinearLayout layoutCategory;
+
     @BindView(R.id.lTrackInfo)
     LinearLayout layoutTrackFullInfo;
     @BindView(R.id.spaceTrackInfo)
@@ -84,12 +98,15 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     TextView textViewPlayerCurrentTime;
     @BindView(R.id.textViewPlayerTotalTime)
     TextView textViewPlayerTotalTime;
+
+    @BindView(R.id.buttonPausePlay)
+    FrameLayout buttonPausePlay;
     @BindView(R.id.imageViewPausePlay)
     ImageView imageViewPausePlay;
     boolean isPlay=false;
-    @BindDrawable(R.drawable.ic_player_pause_button)
+    @BindDrawable(R.drawable.ic_player_controll_pause_button)
      Drawable pauseDrawable;
-    @BindDrawable(R.drawable.ic_player_play_button)
+    @BindDrawable(R.drawable.ic_player_controll_play_button)
      Drawable playDrawable;
 
 
@@ -112,10 +129,10 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     public View onCreateView(LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
-       // View rootView = inflater.inflate(R.layout.fragment_menu_player, container, false);
-        View rootView = inflater.inflate(R.layout.fragment_main_test_last, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_menu_player, container, false);
+      //  View rootView = inflater.inflate(R.layout.fragment_main_test_last, container, false);
         unbinder = ButterKnife.bind(this, rootView);
-        //initViews();
+        initViews();
         return rootView;
     }
 
@@ -134,6 +151,9 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         //Размер Добавить друзей 10%
         ConstraintLayout.LayoutParams lpFriend = (ConstraintLayout.LayoutParams) layoutFriend.getLayoutParams();
         lpFriend.height = (int) (hDev * friendPersent); //10%
+
+        ConstraintLayout.LayoutParams lpCategory = (ConstraintLayout.LayoutParams) layoutCategory.getLayoutParams();
+        lpCategory.width = (int) (wDev ); //10%
         //Добавить отступ для статусбар
 //        if(android.os.Build.VERSION.SDK_INT >=android.os.Build.VERSION_CODES.LOLLIPOP)
 //
@@ -260,12 +280,43 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         seekBarPlayer.setProgress(position+1);
     }
 
+    @OnClick(R.id.RefreshButton)
+    public void refreshButtonClicked() {
+        isOnButtonRefresh=!isOnButtonRefresh;
+        buttonRefreshOn.setVisibility(booleanToVisible(isOnButtonRefresh));
+
+        AlertDialog.Builder ad = new AlertDialog.Builder(getContext());
+        ad.setTitle("Title");  // заголовок
+        ad.setMessage("Message"); // сообщение
+        ad.setPositiveButton( "ok", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+            }
+        });
+        //ad.show();
+
+
+    }
+    @OnClick(R.id.listenPoiButton)
+    public void listenPoiButtonClicked() {
+        isOnButtonListenPoi=!isOnButtonListenPoi;
+        buttonListenPoiOn.setVisibility(booleanToVisible(isOnButtonListenPoi));
+        layoutPoiInfo.setVisibility(booleanToVisible(!isOnButtonListenPoi));
+        layoutCategory.setVisibility(booleanToVisible(isOnButtonListenPoi));
+
+    }
+    private int booleanToVisible(boolean isVisible){
+        if(isVisible) return View.VISIBLE;
+        else return View.INVISIBLE;
+    }
+
     @OnClick(R.id.fabNext)
     public void poiNextClicked() {
         presenter.playOrPauseTrack();
     }
 
-    @OnClick(R.id.imageViewPausePlay)
+    @OnClick(R.id.buttonPausePlay)
     public void playPauseClicked() {
     presenter.playOrPauseTrack();
      }

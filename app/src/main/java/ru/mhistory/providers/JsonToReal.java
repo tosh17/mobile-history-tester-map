@@ -126,6 +126,19 @@ public class JsonToReal {
                     case "lat":
                         lat = jr.nextDouble();
                         break;
+//todo обсудить обработать
+                    case "type_id":
+                        jr.skipValue();
+                        break;
+                    case "version":
+                        jr.skipValue();
+                        break;
+                    case "region_id":
+                        jr.skipValue();
+                        break;
+                    case "region_name":
+                        jr.skipValue();
+                        break;
                     case "content":
                         jr.beginArray();
                         while (jr.hasNext()) {
