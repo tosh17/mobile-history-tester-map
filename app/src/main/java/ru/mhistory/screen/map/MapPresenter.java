@@ -3,7 +3,6 @@ package ru.mhistory.screen.map;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.UiThread;
 import android.support.annotation.WorkerThread;
@@ -28,6 +27,7 @@ import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PlaybackStopEvent;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
 import ru.mhistory.bus.event.PoiFoundEvent;
+import ru.mhistory.bus.event.PoiStatusChangeEvent;
 import ru.mhistory.bus.event.ResetTrackingEvent;
 import ru.mhistory.bus.event.SetMaxPoiRadiusEvent;
 import ru.mhistory.bus.event.StartTrackingEvent;
@@ -40,7 +40,6 @@ import ru.mhistory.common.util.TimeUtil;
 import ru.mhistory.geo.GoogleApiLocationTracker;
 import ru.mhistory.geo.LatLng;
 import ru.mhistory.geo.LocationTracker;
-import ru.mhistory.log.FileLogger;
 import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 import ru.mhistory.playback.AudioService;
@@ -200,7 +199,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @WorkerThread
     @Override
     public void onLocationChanged(@NonNull final LatLng latLng, long time) {
-        Logger.d(LogType.Location,latLng.toString());
+        Logger.d(LogType.Location, latLng.toString());
         if (!isTracing) {
             currentLatLng = latLng;
             setSearchingRadius(conf.radiusStay);
@@ -229,7 +228,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
         if (isStay && result[0] < conf.deltaDistanceToTracking) {
             if (conf.isStayPlay) nextPoiFind(latLng);
-            else return;
+            return;
         }
         if (isStay) {
             isStay = false;
@@ -249,7 +248,18 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         if (isStay && !conf.isStayPlay) return;
         if (isPlayerBlock) return;
         PoiSearchZoneResult pois = PoiSearch.findPoi(latLng, latestPois, conf);
-
+        //Маркеровка
+        for (Poi p : latestPois) {
+            if (pois.contains(p, isStay)) {
+                if (p.status == 0) {
+                   changePoiStatus(p,1);
+                }
+            } else {
+                if (p.status != 0) {
+                  changePoiStatus(p,0);
+                }
+            }
+        }
         if (pois != null && !pois.isEmpty()) {
             pois.removeAll(processedPois);
 
@@ -263,7 +273,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                 }
             });
 
-          //todo   подумать как чистить проигранные пои
+            //todo   подумать как чистить проигранные пои
             //         latestPois = pois.getAllPoi();
             if (pois.isEmpty(isStay)) {
                 Logger.d("Points exists within current radius but all of them are processed");
@@ -430,6 +440,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         if (poi.size() == 0) {
             Logger.d("There are no audio urls for poi (%s)", poi);
             processedPois.add(poi);
+            changePoiStatus(poi,3);
             return;
         }
         String audioUrlToPlay = null;
@@ -449,6 +460,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         if (audioUrlToPlay == null) {
             Logger.d("There are no available audio urls for poi (%s), all of them processed", poi);
             processedPois.add(poi);
+            changePoiStatus(poi,3);
             nextPoiFind(currentLatLng);
             return;
         }
@@ -479,5 +491,10 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                         .putExtra(AudioService.KEY_PREAMBULA, preambula));
                 break;
         }
+    }
+
+    private void changePoiStatus(Poi poi, int i) {
+        poi.status = i;
+        ThreadUtil.runOnUiThread(() -> BusProvider.getInstance().post(new PoiStatusChangeEvent(poi)));
     }
 }

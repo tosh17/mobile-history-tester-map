@@ -15,4 +15,6 @@
     <dimen name="mp_margin_h_adv_player_line">6dp</dimen>
     <dimen name="mp_size_h_adv_player_line">3dp</dimen>
 
+    <dimen name="map_ic_poi_size_w">10dp</dimen>
+    <dimen name="map_ic_poi_size_h">20dp</dimen>
 </resources>

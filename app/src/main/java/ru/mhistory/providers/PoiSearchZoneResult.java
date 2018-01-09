@@ -12,7 +12,6 @@ import java.util.TreeMap;
 
 import api.vo.Poi;
 import api.vo.PoiInfo;
-import ru.mhistory.log.Logger;
 
 public final class PoiSearchZoneResult {
     public final SortedMap<PoiInfo, Poi> stay = new TreeMap<>();
@@ -136,11 +135,17 @@ public final class PoiSearchZoneResult {
         return str.toString();
     }
 
-    public String stayToString(){
+    public String stayToString() {
         StringBuilder str = new StringBuilder("\n\n");
         str.append("Статус Остановка:<br>");
         for (PoiInfo p : stay.keySet())
             str.append(stay.get(p).name + " distanse=" + p.distanceTo + "<br>");
         return str.toString();
+    }
+
+    public boolean contains(Poi p, boolean isStay) {
+        if (isStay) return stay.containsValue(p);
+        else
+            return zone1.containsValue(p) || zone2.containsValue(p) || zone3.containsValue(p) || zone0.containsValue(p);
     }
 }

@@ -2,7 +2,6 @@ package ru.mhistory.screen.map.ui;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Rect;
 import android.location.Location;
 import android.os.Bundle;
@@ -11,6 +10,7 @@ import android.support.annotation.UiThread;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -30,6 +30,8 @@ import api.vo.Poi;
 import ru.mhistory.R;
 import ru.mhistory.common.util.UiUtil;
 import ru.mhistory.geo.LatLng;
+import ru.mhistory.log.LogType;
+import ru.mhistory.log.Logger;
 
 public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickListener, GoogleMap.OnCameraMoveListener {
     public GoogleMap googleMap;
@@ -50,7 +52,11 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
     private Map<LatLng, MarkerOptions> markerOptions = new HashMap<>();
     private Map<LatLng, Marker> markers = new HashMap<>();
     private boolean showPoi;
-    private BitmapDescriptor poiMarkerIcon;
+    private BitmapDescriptor poiMarkerIconInCircle;
+    private BitmapDescriptor poiMarkerIconCurrent;
+    private BitmapDescriptor poiMarkerIconInCircleListen;
+    private BitmapDescriptor poiMarkerIconInCirclePastListen;
+    private BitmapDescriptor poiMarkerIconOutCircle;
 
     public MhMapView(Context context) {
         this(context, null);
@@ -193,7 +199,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                     = new com.google.android.gms.maps.model.LatLng(myLocation.getLatitude(),
                     myLocation.getLongitude());
             if (searchingRadiusCircle == null) {
-               //Круг поиска
+                //Круг поиска
                 searchingRadiusCircle = googleMap.addCircle(new CircleOptions()
                         .center(latLng)
                         .radius(searchingRadiusMeters)
@@ -297,12 +303,49 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                 .title(String.format(Locale.getDefault(), "%s; %d/%d", title, audioIndex,
                         audioCount))
                 .snippet(snippet)
-                .icon(poiMarkerIcon);
+                .icon(poiMarkerIconOutCircle);
     }
 
     private void ensurePoiMarkerIcon() {
-        if (poiMarkerIcon == null) {
-            poiMarkerIcon = BitmapDescriptorFactory.fromResource(R.mipmap.ic_pin);
+        if (poiMarkerIconInCircle == null) {
+            poiMarkerIconInCircle = BitmapDescriptorFactory.fromBitmap(UiUtil.drawableToBitmap(getContext(), R.drawable.ic_location_blue_poi));
+        }
+        if (poiMarkerIconCurrent == null) {
+            poiMarkerIconCurrent = BitmapDescriptorFactory.fromBitmap(UiUtil.drawableToBitmap(getContext(), R.drawable.ic_location_red_poi));
+        }
+        if (poiMarkerIconInCircleListen == null) {
+            poiMarkerIconInCircleListen = BitmapDescriptorFactory.fromBitmap(UiUtil.drawableToBitmap(getContext(), R.drawable.ic_location_green_poi));
+        }
+        if (poiMarkerIconInCirclePastListen == null) {
+            poiMarkerIconInCirclePastListen = BitmapDescriptorFactory.fromBitmap(UiUtil.drawableToBitmap(getContext(), R.drawable.ic_location_greent_blue_poi));
+        }
+        if (poiMarkerIconOutCircle == null) {
+            poiMarkerIconOutCircle = BitmapDescriptorFactory.fromBitmap(UiUtil.drawableToBitmap(getContext(), R.drawable.ic_location_gray_poi));
+        }
+    }
+
+    public void onPoiChange(@NonNull Poi poi) {
+        ru.mhistory.geo.LatLng latLng = new ru.mhistory.geo.LatLng(poi.latitude, poi.longitude);
+        Marker poiMarker = markers.get(latLng);
+        if (poiMarker != null ) {
+            setPoiMarkerIcon(poiMarker, poi.status);
+        }
+    }
+
+    private void setPoiMarkerIcon(Marker poiMarker, int status) {
+        switch (status) {
+            case 0:
+                poiMarker.setIcon(poiMarkerIconOutCircle);
+                break;
+            case 1:
+                poiMarker.setIcon(poiMarkerIconInCircle);
+                break;
+            case 2:
+                poiMarker.setIcon(poiMarkerIconInCirclePastListen);
+                break;
+            case 3:
+                poiMarker.setIcon(poiMarkerIconInCircleListen);
+                break;
         }
     }
 
@@ -310,6 +353,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
         ru.mhistory.geo.LatLng latLng = new ru.mhistory.geo.LatLng(poi.latitude, poi.longitude);
         currentPoi = poi;
         Marker poiMarker = markers.get(latLng);
+
         if (poiMarker != null) {
             currentPoiMarker = poiMarker;
             com.google.android.gms.maps.model.LatLng latLng1 =
@@ -326,18 +370,24 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                 currentPoiCircle.setCenter(latLng1);
             }
             poiMarker.showInfoWindow();
+            Logger.d(LogType.MapView,currentPoi.name+" select from state state "+currentPoi.status);
+            poiMarker.setIcon(poiMarkerIconCurrent);
         }
     }
 
     public void onPoiReleased() {
-        currentPoi = null;
+        //todo status poi
         if (currentPoiMarker != null) {
+            setPoiMarkerIcon(currentPoiMarker, currentPoi.status);
+            Logger.d(LogType.MapView,currentPoi.name+" released to state "+currentPoi.status);
+            currentPoiMarker.hideInfoWindow();
             currentPoiMarker = null;
             if (currentPoiCircle != null) {
                 currentPoiCircle.remove();
                 currentPoiCircle = null;
             }
         }
+        currentPoi = null;
     }
 
     @Override
@@ -366,9 +416,9 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
 
     @Override
     public void onCameraMove() {
-//        float angle=MhMapView.this.googleMap.getCameraPosition().bearing;
-//        float z=  MhMapView.this.googleMap.getCameraPosition().zoom;
-//        Toast.makeText(this.getContext(),"CameraMove andle=" +angle + " zoom="+z,Toast.LENGTH_SHORT).show();
+        float angle=MhMapView.this.googleMap.getCameraPosition().bearing;
+       float z=  MhMapView.this.googleMap.getCameraPosition().zoom;
+       Toast.makeText(this.getContext(),"CameraMove andle=" +angle + " zoom="+z,Toast.LENGTH_SHORT).show();
 
 
     }

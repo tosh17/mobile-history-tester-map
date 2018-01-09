@@ -54,6 +54,7 @@ import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
 import ru.mhistory.bus.event.PoiFoundEvent;
 import ru.mhistory.bus.event.PoiReleasedEvent;
+import ru.mhistory.bus.event.PoiStatusChangeEvent;
 import ru.mhistory.bus.event.ResetTrackingEvent;
 import ru.mhistory.bus.event.SetMaxPoiRadiusEvent;
 import ru.mhistory.bus.event.SetStoryFileEvent;
@@ -564,7 +565,11 @@ public class MapActivity
         Logger.d("Poi found event received");
         mapView.onPoiFound(event.poi);
     }
-
+    @Subscribe
+    public void onPoiStatusChangeEvent(@NonNull PoiStatusChangeEvent event) {
+        Logger.d("Poi found event received");
+        mapView.onPoiChange(event.poi);
+    }
     @Subscribe
     public void onPoiReleasedEvent(@NonNull PoiReleasedEvent event) {
         Logger.d("Poi released event received");
@@ -581,7 +586,8 @@ public class MapActivity
     public void onSetPoiRadiusEvent(@NonNull SetMaxPoiRadiusEvent event) {
         Logger.d(String.format("Set poi radius event received, radius = (%s)", event.radiusMeters));
         mapView.setSearchingRadius(event.radiusMeters);
-        googleMap.animateCamera(CameraUpdateFactory.zoomTo(getZoomLevel(event.radiusMeters*4/3)), 2000, null);
+       // googleMap.animateCamera(CameraUpdateFactory.zoomTo(getZoomLevel(event.radiusMeters*4/3)), 2000, null);
+       // googleMap.animateCamera(CameraUpdateFactory.zoomTo(16), 2000, null);
          }
 
     @Subscribe

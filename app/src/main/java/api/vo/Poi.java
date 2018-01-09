@@ -18,6 +18,7 @@ public class Poi {
     private List<PoiContent> contents;
     private int currentContent=-1;
 
+    public int status=0;
     public Poi(long objId,@NonNull String name,
                @NonNull String type,@NonNull String full_name,@NonNull String full_address,
                double longitude,

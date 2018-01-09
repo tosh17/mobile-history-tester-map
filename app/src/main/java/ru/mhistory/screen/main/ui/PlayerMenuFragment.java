@@ -84,10 +84,10 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
 
     @BindView(R.id.textViewTrackInfo)
     TextView textViewTrackInfo;
-    @BindView(R.id.fabPrev)
-    FloatingActionButton fabPrev;
-    @BindView(R.id.fabNext)
-    FloatingActionButton fabNext;
+//    @BindView(R.id.fabPrev)
+//    FloatingActionButton fabPrev;
+//    @BindView(R.id.fabNext)
+//    FloatingActionButton fabNext;
 
     @BindView(R.id.textViewPlayerTrackInfo)
     TextView textViewPlayerTrackInfo;
