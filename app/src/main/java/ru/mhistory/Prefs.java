@@ -12,6 +12,7 @@ public class Prefs {
 
     private final SharedPreferences delegate;
 
+    public static final String KEY_NV_DEBUG_SHOW ="nv_debag_show" ;//= false;
     //config PoiSearch
     public static final String KEY_POI_SEARCH_TIME_UPDATE ="poi_search_searchTimeUpdate" ;//= 1;
     public static final String KEY_POI_SEARCH_IS_STAY_PLAY ="poi_search_isStayPlay" ;//= true;
@@ -24,7 +25,8 @@ public class Prefs {
     public static final String KEY_POI_SEARCH_deltaAngleZona2 ="poi_search_deltaAngleZona2" ;//= 45;
     public static final String KEY_POI_SEARCH_radiusZone2 ="poi_search_radiusZone2" ;//2000;
     public static final String KEY_POI_SEARCH_deltaAngleZona3 ="poi_search_deltaAngleZona3" ;//= 120;
-
+    public static final String KEY_POI_SEARCH_ANGLE_AVG ="poi_search_searchAngleAvg" ;//= 3;
+    public static final String KEY_POI_SEARCH_ANGLE_AVG_SPEED ="poi_search_searchAngleAvgSpeed" ;//= 1;
 
     public Prefs(@NonNull Context context) {
         delegate = PreferenceManager.getDefaultSharedPreferences(context);
@@ -66,4 +68,6 @@ public class Prefs {
         delegate.edit().putFloat(key, value).apply();
 
     }
+
+
 }

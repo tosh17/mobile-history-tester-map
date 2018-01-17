@@ -41,7 +41,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
     private Marker myLocationMarker;
     private boolean myLocationEnabled = false;
     private Circle searchingRadiusCircle;
-    private Location myLocation;
+    private LatLng myLocation;
     private boolean showSearchingRadius = false;
     private int searchingRadiusMeters;
     private Poi currentPoi;
@@ -139,14 +139,15 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
         }
     }
 
-    public void setMyLocation(@NonNull Location location) {
+
+    public void setMyLocation(@NonNull LatLng location,float angle) {
         if (googleMap == null || !myLocationEnabled) {
             return;
         }
         this.myLocation = location;
-        com.google.android.gms.maps.model.LatLng latLng
-                = new com.google.android.gms.maps.model.LatLng(location.getLatitude(),
-                location.getLongitude());
+            com.google.android.gms.maps.model.LatLng latLng
+                = new com.google.android.gms.maps.model.LatLng(location.latitude,
+                location.longitude);
         if (myLocationMarker == null) {
             // Маркер мая локация
             Bitmap bitmap = UiUtil.drawableToBitmap(getContext(), R.drawable.ic_location_arrow_icon);
@@ -154,10 +155,11 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                     .position(latLng)
                     .anchor(0.5f, 0.5f)
                     .icon(BitmapDescriptorFactory.fromBitmap(bitmap)));
-            myLocationMarker.setRotation(45);
+
         } else {
             myLocationMarker.setPosition(latLng);
         }
+        myLocationMarker.setRotation(angle);
         showSearchingRadiusIfNecessary();
     }
 
@@ -196,8 +198,8 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                 return;
             }
             com.google.android.gms.maps.model.LatLng latLng
-                    = new com.google.android.gms.maps.model.LatLng(myLocation.getLatitude(),
-                    myLocation.getLongitude());
+                    = new com.google.android.gms.maps.model.LatLng(myLocation.latitude,
+                    myLocation.longitude );
             if (searchingRadiusCircle == null) {
                 //Круг поиска
                 searchingRadiusCircle = googleMap.addCircle(new CircleOptions()
@@ -413,12 +415,12 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
             currentPoiMarker.showInfoWindow();
         }
     }
-
+//todo https://stackoverflow.com/questions/13941253/google-maps-api-v2-latlngbounds-from-cameraposition
     @Override
     public void onCameraMove() {
         float angle=MhMapView.this.googleMap.getCameraPosition().bearing;
-       float z=  MhMapView.this.googleMap.getCameraPosition().zoom;
-       Toast.makeText(this.getContext(),"CameraMove andle=" +angle + " zoom="+z,Toast.LENGTH_SHORT).show();
+        float z=  MhMapView.this.googleMap.getCameraPosition().zoom;
+     //  Toast.makeText(this.getContext(),"CameraMove andle=" +angle + " zoom="+z,Toast.LENGTH_SHORT).show();
 
 
     }

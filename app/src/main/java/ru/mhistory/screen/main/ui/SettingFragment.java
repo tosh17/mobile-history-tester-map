@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.Switch;
 
 import ru.mhistory.R;
 import ru.mhistory.providers.SearchConf;
@@ -24,8 +25,10 @@ public class SettingFragment extends DialogFragment {
     EditText stayRadius, zone1Radius, zone2Radius, zone3Radius;
     EditText angleZone2, angleZone3;
     EditText deltaToTracking;
+    EditText angleAvg,angleAvgSpeed;
     CheckBox isStayPlay;
     SearchConf conf;
+    Switch isDebag;
 
     @Override
     public View onCreateView(LayoutInflater inflater,
@@ -56,6 +59,7 @@ public class SettingFragment extends DialogFragment {
             //      dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
         setStyle(DialogFragment.STYLE_NORMAL, R.style.dialog_theme);
+        isDebag = dialog.findViewById(R.id.switchDebug);
         timeUpdate = dialog.findViewById(R.id.editTextSearchTimeUpdate);
         isStayPlay = dialog.findViewById(R.id.checkBoxIsStayPlay);
         stayRadius = dialog.findViewById(R.id.editTextStayRadius);
@@ -64,9 +68,13 @@ public class SettingFragment extends DialogFragment {
         zone3Radius = dialog.findViewById(R.id.editTextZona3Radius);
         angleZone2 = dialog.findViewById(R.id.editTextAngle2);
         angleZone3 = dialog.findViewById(R.id.editTextAngle3);
+        angleAvg = dialog.findViewById(R.id.editTextAngleAVG);
+        angleAvgSpeed = dialog.findViewById(R.id.editTextAngleAVGSpeed);
         deltaToTracking = dialog.findViewById(R.id.editTextDeltaToTraking);
+
         conf = SearchConf.getSearchPoiConf(getContext());
 
+        isDebag.setChecked(conf.debug);
         isStayPlay.setChecked(conf.isStayPlay);
         timeUpdate.setText(String.valueOf(conf.searchTimeUpdate));
         deltaToTracking.setText(String.valueOf(conf.deltaDistanceToTracking));
@@ -76,7 +84,8 @@ public class SettingFragment extends DialogFragment {
         zone3Radius.setText(String.valueOf(conf.radiusZone3));
         angleZone2.setText(String.valueOf(conf.deltaAngleZona2));
         angleZone3.setText(String.valueOf(conf.deltaAngleZona3));
-
+        angleAvg.setText(String.valueOf(conf.angleAvgCount));
+        angleAvgSpeed.setText(String.valueOf(conf.angleAvgSpeed));
 
     }
 
@@ -94,7 +103,8 @@ public class SettingFragment extends DialogFragment {
     }
 
     public void saveConfig() {
-        conf.searchTimeUpdate=editToInt(timeUpdate);
+        conf.debug = isDebag.isChecked();
+        conf.searchTimeUpdate = editToInt(timeUpdate);
         conf.isStayPlay = isStayPlay.isChecked();
         conf.deltaDistanceToTracking = editToInt(deltaToTracking);
         conf.radiusStay = editToInt(stayRadius);
@@ -103,6 +113,8 @@ public class SettingFragment extends DialogFragment {
         conf.radiusZone2 = editToInt(zone2Radius);
         conf.deltaAngleZona2 = editToFloat(angleZone2);
         conf.deltaAngleZona3 = editToFloat(angleZone3);
+        conf.angleAvgCount = editToInt(angleAvg);
+        conf.angleAvgSpeed = editToInt(angleAvgSpeed);
         conf.save(getContext());
     }
 

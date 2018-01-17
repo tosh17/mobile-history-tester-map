@@ -58,6 +58,8 @@ public interface AudioPlayer {
 
     void pause();
 
+    void flip(String nextTrack);
+
     void toPosition(int position);
 
     void stop();

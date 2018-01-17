@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="player_controll_button_size">56dp</dimen>
+    <dimen name="player_controll_button_margin_left_right">20dp</dimen>
+    <dimen name="player_controll_button_margin_middle">10dp</dimen>
+    <dimen name="player_controll_all_button_size_h">24dp</dimen>
+    <dimen name="player_controll_ff_button_size_w">23dp</dimen>
+    <dimen name="player_controll_play_button_size_w">23dp</dimen>
+    <dimen name="player_controll_play_next_poi_size_w">46dp</dimen>
+    <dimen name="player_controll_play_next_track_size_w">23dp</dimen>
+    <dimen name="player_time_margin_top">-12dp</dimen>
+
+    <dimen name="player_poi_info_next_track_button_size">48dp</dimen>
+    <dimen name="ic_player_poi_info_next_poi_button_size_w">10dp</dimen>
+    <dimen name="ic_player_poi_info_next_poi_button_size_h">16dp</dimen>
+    <dimen name="player_poi_info_text_info_size">14sp</dimen>
+    <dimen name="player_poi_info_text_count_size">10sp</dimen>
+    <dimen name="player_poi_info_text_distance_size">10sp</dimen>
+
+    <dimen name="player_category_ic_all_size_h">32sp</dimen>
+    <dimen name="player_category_ic_all_size_w">32sp</dimen>
+    <dimen name="player_category_text_size">12sp</dimen>
+    <dimen name="player_category_ic_margin">3dp</dimen>
+    <dimen name="player_category_button_margin">2dp</dimen>
+    <dimen name="player_category_all_h">38dp</dimen>
+
+    <dimen name="mp_icon_size_h_adv_player">24dp</dimen>
+    <dimen name="mp_margin_h_adv_player_line">6dp</dimen>
+    <dimen name="mp_size_h_adv_player_line">2dp</dimen>
+
+    <dimen name="mp_icon_size_h">24dp</dimen>
+    <dimen name="mp_icon_size_w_feedback">30dp</dimen>
+
+    <dimen name="map_ic_margin">8dp</dimen>
+    <dimen name="map_ic_frame_size">56dp</dimen>
+    <dimen name="map_ic_frame_margin_bottom">8dp</dimen>
+    <dimen name="tt">50dp</dimen>
+</resources>

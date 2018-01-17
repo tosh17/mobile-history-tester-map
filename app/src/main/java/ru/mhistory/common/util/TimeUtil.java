@@ -23,6 +23,24 @@ public class TimeUtil {
         }
         return finalTimerString + minutes + ":" + secondsString;
     }
+    public static String secToString(long sec) {
+        String finalTimerString = "";
+        String secondsString;
+        int hours = (int) (sec / ( 60 * 60));
+        int minutes = (int) (sec - hours*( 60 * 60))/60;
+        int seconds = (int) sec%60;
+        // Add hours if there
+        if (hours > 0) {
+            finalTimerString = hours + ":";
+        }
+        // Prepending 0 to seconds if it is one digit
+        if (seconds < 10) {
+            secondsString = "0" + seconds;
+        } else {
+            secondsString = "" + seconds;
+        }
+        return finalTimerString + minutes + ":" + secondsString;
+    }
     public static int stringToMs(String strTime) {
         String[] time=strTime.split(":");
         return Integer.parseInt(time[0])*60+Integer.parseInt(time[1]);

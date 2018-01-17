@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="mp_bg">#60ffffff</color>
     <color name="mp_button_on">#1f3365</color>
+    <color name="mp_category_line">#f6f6f6</color>
+
+    <color name="colorPlayerCategoryUnCheck">#ffffff</color>
+    <color name="colorPlayerCategoryNature">#0267ff</color>
+    <color name="colorPlayerCategoryHistory">#f47248</color>
+    <color name="colorPlayerCategoryPeople">#4db686</color>
+    <color name="colorPlayerCategoryCulture">#d42b2b</color>
 </resources>

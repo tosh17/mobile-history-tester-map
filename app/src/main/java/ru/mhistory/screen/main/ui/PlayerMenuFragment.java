@@ -3,6 +3,7 @@ package ru.mhistory.screen.main.ui;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -10,11 +11,9 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v4.widget.Space;
 import android.support.v7.app.AlertDialog;
 import android.text.Html;
 import android.util.DisplayMetrics;
@@ -26,9 +25,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -41,10 +40,9 @@ import butterknife.OnClick;
 import butterknife.Unbinder;
 import ru.mhistory.R;
 import ru.mhistory.common.util.PermissionUtils;
-
 import ru.mhistory.screen.map.MapPresenter;
 
-public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarChangeListener{
+public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarChangeListener {
 
 
     private static final int REQUEST_STORY_PICKER = 0;
@@ -58,19 +56,25 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
 
     @BindView(R.id.menuLinerFriend)
     LinearLayout layoutFriend;
+    @BindView(R.id.menuLinerADW)
+    LinearLayout layoutAWD;
+    @BindView(R.id.menuLinerPlayerAdv)
+    LinearLayout layoutPlayerAdv;
+    @BindView(R.id.lPlayer)
+    LinearLayout layoutPlayer;
 
 
     @BindView(R.id.RefreshButton) //Refresh button
-    LinearLayout buttonRefresh;
+            LinearLayout buttonRefresh;
     @BindView(R.id.RefreshOn)
     ImageView buttonRefreshOn;
-    boolean isOnButtonRefresh=true;
+    boolean isOnButtonRefresh = true;
 
     @BindView(R.id.listenPoiButton)
     LinearLayout buttonListenPoi;
     @BindView(R.id.listenPoiOn)
     ImageView buttonListenPoiOn;
-    boolean isOnButtonListenPoi=false;
+    boolean isOnButtonListenPoi = false;
 
     @BindView(R.id.layoutPoiInfo)
     LinearLayout layoutPoiInfo;
@@ -79,42 +83,77 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
 
     @BindView(R.id.lTrackInfo)
     LinearLayout layoutTrackFullInfo;
-    @BindView(R.id.spaceTrackInfo)
-    Space spaceMidle;
-
     @BindView(R.id.textViewTrackInfo)
     TextView textViewTrackInfo;
-//    @BindView(R.id.fabPrev)
-//    FloatingActionButton fabPrev;
-//    @BindView(R.id.fabNext)
-//    FloatingActionButton fabNext;
+    @BindView(R.id.textViewTrackInfoCount)
+    TextView textViewTrackInfoCount;
+    @BindView(R.id.textViewTrackInfoDistance)
+    TextView textViewTrackInfoDistance;
 
     @BindView(R.id.textViewPlayerTrackInfo)
     TextView textViewPlayerTrackInfo;
     @BindView(R.id.seekBarPlayer)
     SeekBar seekBarPlayer;
-    private boolean isSeekBarTouch=false;
+    private boolean isSeekBarTouch = false;
     @BindView(R.id.textViewPlayerCurrentTime)
     TextView textViewPlayerCurrentTime;
     @BindView(R.id.textViewPlayerTotalTime)
     TextView textViewPlayerTotalTime;
 
-    @BindView(R.id.buttonPausePlay)
-    FrameLayout buttonPausePlay;
+    //CATEGORY
+    @BindView(R.id.bgCategoryNature)
+    LinearLayout bgCategoryNature;
+    @BindView(R.id.icCategoryNature)
+    ImageView icCategoryNature;
+    @BindView(R.id.txtCategoryNature)
+    TextView txtCategoryNature;
+    private boolean isCategoryNaturePress=true;
+
+    @BindView(R.id.bgCategoryHistory)
+    LinearLayout bgCategoryHistory;
+    @BindView(R.id.icCategoryHistory)
+    ImageView icCategoryHistory;
+    @BindView(R.id.txtCategoryHistory)
+    TextView txtCategoryHistory;
+    private boolean isCategoryHistoryPress=true;
+
+    @BindView(R.id.bgCategoryPeople)
+    LinearLayout bgCategoryPeople;
+    @BindView(R.id.icCategoryPeople)
+    ImageView icCategoryPeople;
+    @BindView(R.id.txtCategoryPeople)
+    TextView txtCategoryPeople;
+    private boolean isCategoryPeoplePress=true;
+
+    @BindView(R.id.bgCategoryCulture)
+    LinearLayout bgCategoryCulture;
+    @BindView(R.id.icCategoryCulture)
+    ImageView icCategoryCulture;
+    @BindView(R.id.txtCategoryCulture)
+    TextView txtCategoryCulture;
+    private boolean isCategoryCulturePress=true;
+
+
     @BindView(R.id.imageViewPausePlay)
     ImageView imageViewPausePlay;
-    boolean isPlay=false;
+    boolean isPlay = false;
     @BindDrawable(R.drawable.ic_player_controll_pause_button)
-     Drawable pauseDrawable;
+    Drawable pauseDrawable;
     @BindDrawable(R.drawable.ic_player_controll_play_button)
-     Drawable playDrawable;
+    Drawable playDrawable;
+    @BindDrawable(R.drawable.ic_player_poi_info_shape)
+    Drawable poiInfoShape;
 
 
     @BindView(R.id.textTest)
     TextView textTest;
-    public void setTest(String s){
-        textTest.setText("Max distance to stay"+(long)presenter.maxDistance+"\n");
-        textTest.append(Html.fromHtml(s));}
+    @BindView(R.id.scrollTest)
+    ScrollView scrollTest;
+    public boolean isDebug=false;
+    public void setTest(String s) {
+        textTest.setText("Max distance to stay" + (long) presenter.maxDistance + "\n");
+        textTest.append(Html.fromHtml(s));
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -130,9 +169,9 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
                              ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_menu_player, container, false);
-      //  View rootView = inflater.inflate(R.layout.fragment_main_test_last, container, false);
         unbinder = ButterKnife.bind(this, rootView);
         initViews();
+        if(isDebug) debugShow(isDebug);
         return rootView;
     }
 
@@ -143,17 +182,12 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         display.getMetrics(metricsB);
         wDev = metricsB.widthPixels;
         hDev = metricsB.heightPixels;
-        //шторка 100%
-//     DrawerLayout.LayoutParams lp = (DrawerLayout.LayoutParams) this.getView().getLayoutParams();
-//        lp.width =(int)(wDev *1.0);
-//       lp.height =hDev;
-
         //Размер Добавить друзей 10%
         ConstraintLayout.LayoutParams lpFriend = (ConstraintLayout.LayoutParams) layoutFriend.getLayoutParams();
         lpFriend.height = (int) (hDev * friendPersent); //10%
 
         ConstraintLayout.LayoutParams lpCategory = (ConstraintLayout.LayoutParams) layoutCategory.getLayoutParams();
-        lpCategory.width = (int) (wDev ); //10%
+        lpCategory.width = (int) (wDev);
         //Добавить отступ для статусбар
 //        if(android.os.Build.VERSION.SDK_INT >=android.os.Build.VERSION_CODES.LOLLIPOP)
 //
@@ -166,32 +200,15 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
 //            }
 //        }
 
-        //Размер кнопок для вариантов прослушивани
-//        llsetH(textViewPlayAgain, (int) (hDev * buttonPlayerAdv));
-//
-//        llsetH(textViewPlayAbout, (int) (hDev * buttonPlayerAdv));
-//
-//        llsetH(textViewNotPause, (int) (hDev * buttonPlayerAdv));
-
         //Размер TrackInfo
         LinearLayout.LayoutParams lpTrackFullInfo = (LinearLayout.LayoutParams) layoutTrackFullInfo.getLayoutParams();
         int sizeTrackInfo = Math.min(wDev, hDev) / 2;
         lpTrackFullInfo.height = sizeTrackInfo;
         lpTrackFullInfo.width = sizeTrackInfo;
-        Drawable bgTracInfo = getResources().getDrawable(R.drawable.shape);
-        bgTracInfo.setColorFilter(
-
+        poiInfoShape.setColorFilter(
                 getResources().
-
-                        getColor(R.color.colorBgTrackInfo1), PorterDuff.Mode.OVERLAY);
-        layoutTrackFullInfo.setBackground(bgTracInfo);
-
-        //Поднимаем текст TrackInfo  на уровень стрелок
-        llsetH(spaceMidle, (int) (wDev / 4 -
-
-                getResources().
-
-                        getDimensionPixelSize(R.dimen.nv_track_info_text_size) * 2 / 3));
+                        getColor(R.color.colorBgTrackInfo3), PorterDuff.Mode.OVERLAY);
+        layoutTrackFullInfo.setBackground(poiInfoShape);
         //Бегущая строка
         textViewPlayerTrackInfo.setSelected(true);
         seekBarPlayer.setOnSeekBarChangeListener(this);
@@ -216,14 +233,7 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     public void setLocationUpdateIntervalSec(int number) {
     }
 
-    public void setPoiMaxRadius(int poiMaxRadius) {
-
-    }
-
     public void updateUiOnResetTracking() {
-    }
-
-    public void setPoiMinRadius(int radius) {
     }
 
     public void setNextAudioTrackInfo(String trackName, int trackSequence, int totalTrackCount) {
@@ -240,8 +250,11 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     public void hidePlayerControls() {
     }
 
-    public void setPoi(@NonNull String poiDesc) {
+    public void setPoi(@NonNull String poiDesc, int size, float distanceTo) {
         textViewTrackInfo.setText(poiDesc);
+        //todo hardcode
+        textViewTrackInfoCount.setText(size + " треков");
+        textViewTrackInfoDistance.setText((int) distanceTo + "м до объекта");
 
     }
 
@@ -267,6 +280,7 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         textViewPlayerTrackInfo.setText(R.string.label_location_searching);
 
     }
+
     public void updateUiOnStopTracking() {
     }
 
@@ -274,21 +288,21 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
                                           @NonNull String currentDurationAsStr) {
         textViewPlayerCurrentTime.setText(currentDurationAsStr);
         textViewPlayerTotalTime.setText(totalDurationAsStr);
-     }
+    }
 
-    public void updateAudioTrackDurationsSeekBar(int position){
-        seekBarPlayer.setProgress(position+1);
+    public void updateAudioTrackDurationsSeekBar(int position) {
+        seekBarPlayer.setProgress(position + 1);
     }
 
     @OnClick(R.id.RefreshButton)
     public void refreshButtonClicked() {
-        isOnButtonRefresh=!isOnButtonRefresh;
+        isOnButtonRefresh = !isOnButtonRefresh;
         buttonRefreshOn.setVisibility(booleanToVisible(isOnButtonRefresh));
 
         AlertDialog.Builder ad = new AlertDialog.Builder(getContext());
         ad.setTitle("Title");  // заголовок
         ad.setMessage("Message"); // сообщение
-        ad.setPositiveButton( "ok", new DialogInterface.OnClickListener() {
+        ad.setPositiveButton("ok", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
 
@@ -298,44 +312,115 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
 
 
     }
+
     @OnClick(R.id.listenPoiButton)
     public void listenPoiButtonClicked() {
-        isOnButtonListenPoi=!isOnButtonListenPoi;
+        isOnButtonListenPoi = !isOnButtonListenPoi;
         buttonListenPoiOn.setVisibility(booleanToVisible(isOnButtonListenPoi));
         layoutPoiInfo.setVisibility(booleanToVisible(!isOnButtonListenPoi));
         layoutCategory.setVisibility(booleanToVisible(isOnButtonListenPoi));
 
     }
-    private int booleanToVisible(boolean isVisible){
-        if(isVisible) return View.VISIBLE;
-        else return View.INVISIBLE;
+
+    private int booleanToVisible(boolean isVisible) {
+        return isVisible?View.VISIBLE:View.INVISIBLE;
     }
 
-    @OnClick(R.id.fabNext)
-    public void poiNextClicked() {
-        presenter.playOrPauseTrack();
+
+
+
+
+  // Category
+    public void categoryClick(boolean isCategoryPress,LinearLayout bgCategory,ImageView icCategory,TextView txtCategory,int color) {
+        if(isCategoryPress){
+            bgCategory.setBackgroundColor(getResources().getColor(R.color.colorPlayerCategoryUnCheck));
+            icCategory.setColorFilter(
+                    Color.BLACK, PorterDuff.Mode.MULTIPLY);
+            txtCategory.setTextColor(Color.BLACK);
+        }
+        else{
+            bgCategory.setBackgroundColor(color);
+            icCategory.setColorFilter(
+                    Color.WHITE, PorterDuff.Mode.MULTIPLY);
+            txtCategory.setTextColor(Color.WHITE);
+        }
+
+
+    }
+    @OnClick(R.id.btnCategoryNature)
+    public void categoryNatureClick() {
+        categoryClick(isCategoryNaturePress,bgCategoryNature,icCategoryNature,txtCategoryNature,getResources().getColor(R.color.colorPlayerCategoryNature));
+        isCategoryNaturePress=!isCategoryNaturePress;
+    }
+    @OnClick(R.id.btnCategoryHistory)
+    public void categoryHistoryClick() {
+        categoryClick(isCategoryHistoryPress,bgCategoryHistory,icCategoryHistory,txtCategoryHistory,getResources().getColor(R.color.colorPlayerCategoryHistory));
+        isCategoryHistoryPress=!isCategoryHistoryPress;
+    }
+    @OnClick(R.id.btnCategoryPeople)
+    public void categoryPeopleClick() {
+        categoryClick(isCategoryPeoplePress,bgCategoryPeople,icCategoryPeople,txtCategoryPeople,getResources().getColor(R.color.colorPlayerCategoryPeople));
+        isCategoryPeoplePress=!isCategoryPeoplePress;
+    }
+    @OnClick(R.id.btnCategoryCulture)
+    public void categoryCultureClick() {
+        categoryClick(isCategoryCulturePress,bgCategoryCulture,icCategoryCulture,txtCategoryCulture,getResources().getColor(R.color.colorPlayerCategoryCulture));
+        isCategoryCulturePress=!isCategoryCulturePress;
+    }
+    @OnClick(R.id.btnCategoryALL)
+    public void categoryALLClick() {
+        if(!isCategoryNaturePress) categoryNatureClick();
+        if(!isCategoryHistoryPress) categoryHistoryClick();
+        if(!isCategoryPeoplePress) categoryPeopleClick();
+        if(!isCategoryCulturePress) categoryCultureClick();
+        isCategoryNaturePress=true; isCategoryHistoryPress=true; isCategoryPeoplePress=true; isCategoryCulturePress=true;
     }
 
+
+
+
+    //Player Control
     @OnClick(R.id.buttonPausePlay)
     public void playPauseClicked() {
-    presenter.playOrPauseTrack();
-     }
+        presenter.playOrPauseTrack();
+    }
+    @OnClick(R.id.buttonPrevTrack)
+    public void prevTrackClicked(){
+        presenter.playPrevTrack();
+    }
+    @OnClick(R.id.buttonNextTrack)
+    public void nextTrackClicked(){presenter.playNextTrack();}
 
-    @Override
+     @Override
     public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-        if(isSeekBarTouch) presenter.playTrackToPosition(i);
+        if (isSeekBarTouch) presenter.playTrackToPosition(i);
     }
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-                isSeekBarTouch=true;
+        isSeekBarTouch = true;
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-        isSeekBarTouch=false;
-
+        isSeekBarTouch = false;
     }
+
+
+
+
+
+    public void debugShow(boolean isDebag){
+       int isVisible=booleanToVisible(!isDebag);
+       layoutFriend.setVisibility(isVisible);
+       layoutCategory.setVisibility(isVisible);
+       layoutPoiInfo.setVisibility(isVisible);
+       layoutAWD.setVisibility(isVisible);
+       layoutPlayer.setVisibility(isVisible);
+       layoutPlayerAdv.setVisibility(isVisible);
+       scrollTest.setVisibility(isDebag?View.VISIBLE:View.GONE);
+    }
+
 //    public void onPoiMinRadiusClicked() {
 //        presenter.onPoiMinRadiusClicked();
 //    }
@@ -434,8 +519,8 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
 
         }
         SettingFragment d = new SettingFragment();
-       // d.setTargetFragment(this,5);
-        d.show(getFragmentManager(),"");
+        // d.setTargetFragment(this,5);
+        d.show(getFragmentManager(), "");
         return super.onOptionsItemSelected(item);
     }
 
@@ -488,8 +573,8 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
             // presenter.setStoryFileUri(storyFileUri);
             // печать названия файла
             //       storyFile.setText(storyFileUri.toString());
-           //Todo выбор файла json
-           presenter.startTracking();
+            //Todo выбор файла json
+            presenter.startTracking();
         }
     }
 
@@ -549,10 +634,9 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     }
 
     private void onClearStoryFile() {
-       // presenter.setStoryFileUri(null);
+        // presenter.setStoryFileUri(null);
         //storyFile.setText(R.string.empty_story_file);
     }
-
 
 
 //

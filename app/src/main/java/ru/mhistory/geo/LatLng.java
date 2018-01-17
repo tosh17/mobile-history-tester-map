@@ -8,7 +8,10 @@ public class LatLng {
         this.longitude = longitude;
         this.latitude = latitude;
     }
-
+    public LatLng(com.google.android.gms.maps.model.LatLng gogleLatLng) {
+        this.longitude = gogleLatLng.longitude;
+        this.latitude = gogleLatLng.latitude;
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -31,4 +34,10 @@ public class LatLng {
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
+
+    public com.google.android.gms.maps.model.LatLng toGoogle() {
+        return new com.google.android.gms.maps.model.LatLng(latitude,longitude);
+    }
+
+
 }

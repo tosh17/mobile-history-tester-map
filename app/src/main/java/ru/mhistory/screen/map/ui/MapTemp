@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -17,8 +18,6 @@ import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.util.Pair;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.github.dmstocking.optional.java.util.Optional;
@@ -37,7 +36,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.gson.Gson;
 import com.squareup.otto.Subscribe;
 
@@ -52,7 +50,6 @@ import ru.mhistory.Prefs;
 import ru.mhistory.R;
 import ru.mhistory.bus.BusProvider;
 import ru.mhistory.bus.event.AppPrepareBDCompliteEvent;
-import ru.mhistory.bus.event.LocationChange;
 import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
 import ru.mhistory.bus.event.PoiFoundEvent;
@@ -70,12 +67,12 @@ import ru.mhistory.common.util.PermissionUtils;
 import ru.mhistory.common.util.UiUtil;
 import ru.mhistory.geo.LocationAccuracy;
 import ru.mhistory.geo.LocationRequestDefaults;
+import ru.mhistory.log.FileLogger;
 import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 import ru.mhistory.playback.AudioService;
 import ru.mhistory.provider.PoiProviderConfig;
 import ru.mhistory.providers.JsonToReal;
-import ru.mhistory.providers.PoiSearch;
 import ru.mhistory.providers.ServerFtpLoader;
 import ru.mhistory.providers.ServerLoaderProvider;
 import ru.mhistory.realm.RealmFactory;
@@ -86,7 +83,9 @@ public class MapActivity
         extends DrawerActivity
         implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener
-        , LocationListener {
+        //todo Listener
+        // ,        LocationListener
+{
     private static final int REQUEST_LOCATION_PERMISSION = 0;
     private static final int REQUEST_RESOLVE_PLAY_SERVICES_ERROR = 1;
     private static final int REQUEST_CHECK_LOCATION_SETTINGS = 2;
@@ -97,8 +96,6 @@ public class MapActivity
     @BindView(R.id.map)
     MhMapView mapView;
 
-    @BindView(R.id.ic_commpass)
-    ImageView icCompass;
     private Prefs prefs;
     private GoogleMap googleMap;
     private GoogleApiClient googleApiClient;
@@ -111,9 +108,6 @@ public class MapActivity
     private boolean firstTimeLaunch;
     private boolean showSearchingRadius = true;
     private boolean showPoi = true;
-    private boolean isCompass = true;
-    private float currentBearing = 0;
-    private android.widget.Toast toast;
 
     @SuppressWarnings("ConstantConditions")
     @Override
@@ -138,14 +132,13 @@ public class MapActivity
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .build();
-        //todo locationRequestHighAccuracy
-        locationRequestHighAccuracy = LocationRequestDefaults.get(LocationAccuracy.MEDIUM);
+        locationRequestHighAccuracy = LocationRequestDefaults.get(LocationAccuracy.HIGH);
 
         toInitService();
     }
 
     private void toInitService() {
-        //  FileUtil.verifyStoragePermissions(this);
+      //  FileUtil.verifyStoragePermissions(this);
         Logger.start();
         startService(new Intent(this, AudioService.class)
                 .setAction(AudioService.Action.INIT));
@@ -175,7 +168,7 @@ public class MapActivity
         super.onPause();
         mapView.onPause();
         //todo Listener
-        //  stopLocationUpdatesIfConnected();
+      //  stopLocationUpdatesIfConnected();
     }
 
     @Override
@@ -315,14 +308,19 @@ public class MapActivity
         mapView.setShowSearchingRadius(showSearchingRadius);
         mapView.setSearchingRadius(new PoiProviderConfig().getMaxRadiusInMeters());
     }
-
+    public int getZoomLevel(double radius) {
+        double scale = radius ;
+        int zoomLevel = (int) (22 - Math.log(scale) / Math.log(2));
+        zoomLevel=14;
+        return zoomLevel;
+    }
     private boolean checkAppLaunch() {
         int lastSeenVersion = prefs.getInt(Prefs.KEY_LAST_SEEN_VERSION, -1);
         int appLaunch = AppLaunchChecker.checkAppLaunch(lastSeenVersion);
         switch (appLaunch) {
             case AppLaunchChecker.FIRST_TIME:
                 //Todo Сделать диалог с переходом на страницу занрузки
-                loadBD();
+                  loadBD();
             case AppLaunchChecker.FIRST_TIME_VERSION:
                 prefs.putInt(Prefs.KEY_LAST_SEEN_VERSION, BuildConfig.VERSION_CODE);
                 break;
@@ -335,32 +333,32 @@ public class MapActivity
     }
 
     private void loadBD() {
-        //todo заменить имена файлов
-        String tempName = "cache/temp.zip";
-        String jsonName = "34pois.json";
+            //todo заменить имена файлов
+            String tempName = "cache/temp.zip";
+            String jsonName = "34pois.json";
         File cachDir = new File(getApplicationContext().getFilesDir() + "/cache");
         if (!cachDir.exists()) {
             Log.d("MAKE DIR", cachDir.mkdir() + "");
         }
-        FileUtil.listDir(getApplicationContext().getFilesDir().getAbsolutePath());
+         FileUtil.listDir(getApplicationContext().getFilesDir().getAbsolutePath());
 
-        ServerLoaderProvider serverLoader = new ServerFtpLoader();
-        File file = new File(getApplicationContext().getFilesDir() + "/" + tempName);
-        serverLoader.load(file, new ServerLoaderProvider.onServerLoadFinish() {
-            @Override
-            public void loadFinished(boolean statusLoad) {
-                try {
-                    serverLoader.unzip(getApplicationContext().getFilesDir().toString() + "/", tempName);
-                    Uri uri = Uri.fromFile(new File(getApplicationContext().getFilesDir() + "/" + jsonName));
-                    RealmFactory.getInstance(getApplicationContext());
-                    new JsonToReal(uri).doIt();
-                } catch (IOException e) {
-                    e.printStackTrace();
+            ServerLoaderProvider serverLoader = new ServerFtpLoader();
+            File file = new File(getApplicationContext().getFilesDir() + "/" + tempName);
+            serverLoader.load(file, new ServerLoaderProvider.onServerLoadFinish() {
+                @Override
+                public void loadFinished(boolean statusLoad) {
+                    try {
+                        serverLoader.unzip(getApplicationContext().getFilesDir().toString() + "/", tempName);
+                        Uri uri = Uri.fromFile(new File(getApplicationContext().getFilesDir() + "/" + jsonName));
+                        RealmFactory.getInstance(getApplicationContext());
+                        new JsonToReal(uri).doIt();
+                         } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
-        });
+            });
 
-    }
+        }
 
 
     private Optional<Location> getLastKnownLocation() {
@@ -441,61 +439,24 @@ public class MapActivity
             return;
         }
         try {
-            LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient,
-                    locationRequestHighAccuracy, this);
+            //todo Listener
+           // LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient,
+           //         locationRequestHighAccuracy, this);
         } catch (SecurityException ex) {
             // TODO:
         }
     }
-
-    private void stopLocationUpdatesIfConnected() {
-        if (googleApiClient.isConnected()) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
-        }
-    }
+    //todo Listener
+//    private void stopLocationUpdatesIfConnected() {
+//        if (googleApiClient.isConnected()) {
+//            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
+//        }
+//    }
 
     private void cameraToCenter() {
         float currentZoom = googleMap.getCameraPosition().zoom;
         lastLatLng.ifPresent(latLng -> googleMap.animateCamera(
                 CameraUpdateFactory.newLatLngZoom(latLng, currentZoom), 250, null));
-    }
-
-    private void cameraToBearing(float bearing) {
-        float currentZoom = googleMap.getCameraPosition().zoom;
-
-        lastLatLng.ifPresent(latLng -> {
-            CameraPosition cameraPosition = new CameraPosition.Builder()
-                    .target(latLng)      // Sets the center of the map to Mountain View
-                    .zoom(currentZoom)                   // Sets the zoom
-                    .bearing(bearing)                // Sets the orientation of the camera to east
-                  //  .tilt(30)                   // Sets the tilt of the camera to 30 degrees
-                    .build();                   // Creates a CameraPosition from the builder
-            googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-        });
-    }
-
-    private void cameraToCenterMeters(int meters) {
-        float currentZoom = googleMap.getCameraPosition().zoom;
-
-//        lastLatLng.ifPresent(latLng -> {
-//            Pair<ru.mhistory.geo.LatLng, ru.mhistory.geo.LatLng>
-//                    square = PoiSearch.getSquare(
-//                    new ru.mhistory.geo.LatLng(lastLatLng.get()), meters);
-//            LatLngBounds SQUARE = new LatLngBounds(
-//                    square.first.toGoogle(), square.second.toGoogle());
-//            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(SQUARE, 20));
-//        });
-
-        lastLatLng.ifPresent(latLng -> {
-
-            Pair<ru.mhistory.geo.LatLng, ru.mhistory.geo.LatLng>
-                    square = PoiSearch.getSquare(
-                    new ru.mhistory.geo.LatLng(lastLatLng.get()), meters);
-            LatLngBounds SQUARE = new LatLngBounds(
-                    square.first.toGoogle(), square.second.toGoogle());
-                          // Creates a CameraPosition from the builder
-            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(SQUARE,0));
-        });
     }
 
     private void cameraToLatLng(@NonNull LatLng latLng) {
@@ -504,24 +465,24 @@ public class MapActivity
     }
 
     private void cameraToLatestPosition() {
-        String str = prefs.getString(Prefs.KEY_LATEST_CAMERA_POSITION);
+        String str =prefs.getString(Prefs.KEY_LATEST_CAMERA_POSITION);
         Optional.ofNullable(new Gson().fromJson(
                 str, CameraPosition.class))
                 .ifPresent(latestCameraPosition -> {
 
                     googleMap.moveCamera(
-                            CameraUpdateFactory.newCameraPosition(latestCameraPosition));
+                        CameraUpdateFactory.newCameraPosition(latestCameraPosition));
 
                 });
     }
-
-    @Override
-    public void onLocationChanged(@NonNull Location location) {
-        Logger.d(LogType.Location, "Map   " + location.toString());
-        updateMyLocation(location);
-        // mapView.setMyLocation(location);
-        cameraToLatLng(new LatLng(location.getLatitude(), location.getLongitude()));
-    }
+//todo Listener
+//    @Override
+//    public void onLocationChanged(@NonNull Location location) {
+//        Logger.d(LogType.Location,"Map   "+location.toString());
+//        updateMyLocation(location);
+//        mapView.setMyLocation(location);
+//        cameraToLatLng(new LatLng(location.getLatitude(), location.getLongitude()));
+ //   }
 
     private void updateMyLocation(@NonNull Location location) {
         lastLocation = location;
@@ -573,65 +534,6 @@ public class MapActivity
         });
     }
 
-    @OnClick(R.id.btn_compass)
-    public void onbtnCompass() {
-        checkLocationPermission(true, () -> {
-            if (!googleApiClient.isConnected() && !googleApiClient.isConnecting()) {
-                googleApiClient.connect();
-            } else {
-                isCompass = !isCompass;
-                float bearing;
-                if (isCompass) {
-                    printToast("Режим Слежения Включен");
-                    icCompass.setRotation(0);
-                    bearing = currentBearing;
-                } else {
-                    printToast("Режим Слежения Выключен");
-                    icCompass.setRotation(-45);
-                    bearing = 0;
-                }
-                if (lastLocation != null) {
-
-                    cameraToBearing(bearing);
-                } else {
-                    getLastKnownLocation().ifPresent(location -> {
-                        updateMyLocation(location);
-                        cameraToBearing(bearing);
-                    });
-                }
-                checkLocationSettings(true);
-            }
-        });
-    }
-
-    @OnClick(R.id.btn_map_scale)
-    public void onBtnMapScale() {
-        checkLocationPermission(true, () -> {
-            if (!googleApiClient.isConnected() && !googleApiClient.isConnecting()) {
-                googleApiClient.connect();
-            } else {
-                if (lastLocation != null) {
-                    cameraToCenterMeters(15000);
-                } else {
-                    getLastKnownLocation().ifPresent(location -> {
-                        updateMyLocation(location);
-                        cameraToCenterMeters(15000);
-                    });
-                }
-                checkLocationSettings(true);
-            }
-        });
-    }
-
-    @Subscribe
-    public void onLocationChangeEvent(@NonNull LocationChange event) {
-
-        currentBearing=event.angle;
-        if(!isCompass){ mapView.setMyLocation(event.location, 0); cameraToBearing(event.angle);}
-        else mapView.setMyLocation(event.location, event.angle);
-
-    }
-
     @Subscribe
     public void onPoiCacheAvailableEvent(@NonNull PoiCacheAvailableEvent event) {
         Logger.d("Poi cache available event received");
@@ -667,13 +569,11 @@ public class MapActivity
         Logger.d("Poi found event received");
         mapView.onPoiFound(event.poi);
     }
-
     @Subscribe
     public void onPoiStatusChangeEvent(@NonNull PoiStatusChangeEvent event) {
         Logger.d("Poi found event received");
         mapView.onPoiChange(event.poi);
     }
-
     @Subscribe
     public void onPoiReleasedEvent(@NonNull PoiReleasedEvent event) {
         Logger.d("Poi released event received");
@@ -690,20 +590,16 @@ public class MapActivity
     public void onSetPoiRadiusEvent(@NonNull SetMaxPoiRadiusEvent event) {
         Logger.d(String.format("Set poi radius event received, radius = (%s)", event.radiusMeters));
         mapView.setSearchingRadius(event.radiusMeters);
-        // googleMap.animateCamera(CameraUpdateFactory.zoomTo(getZoomLevel(event.radiusMeters*4/3)), 2000, null);
-        // googleMap.animateCamera(CameraUpdateFactory.zoomTo(16), 2000, null);
-    }
+       // googleMap.animateCamera(CameraUpdateFactory.zoomTo(getZoomLevel(event.radiusMeters*4/3)), 2000, null);
+       // googleMap.animateCamera(CameraUpdateFactory.zoomTo(16), 2000, null);
+         }
 
     @Subscribe
     public void onTrackPlaybackEndedEvent(@NonNull TrackPlaybackEndedEvent event) {
         mapView.onPoiReleased();
     }
 
-    public void printToast(String str){
-        if(toast==null){ toast=new Toast(this).makeText(this,str,Toast.LENGTH_SHORT);}
-        else toast.setText(str);
-        toast.show();
-       }
+
     public static class PlayServicesErrorDialogFragment extends DialogFragment {
         private static final String ARG_PLAY_SERVICES_ERROR = "playServicesError";
 

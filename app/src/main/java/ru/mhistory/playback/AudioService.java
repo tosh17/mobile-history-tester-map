@@ -34,6 +34,7 @@ import ru.mhistory.log.Logger;
 
 public class AudioService extends Service implements AudioPlayer.Callbacks, AudioPlayer.PreambulaCallback, AudioFocusable {
     private boolean isDebug = false;
+    public static final String KEY_AUDIO_ID = "CONTENT_ID";
     public static final String KEY_AUDIO_URL = "AUDIO_URL";
     public static final String KEY_IS_PREAMBULA = "IS_PREAMBULA";
     public static final String KEY_PREAMBULA = "PREAMBULA";
@@ -171,7 +172,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 onEnded();
                 break;
             case Action.NEXT:
-                onNextAction();
+                String nextUrl = intent.getExtras().getString(KEY_AUDIO_URL);
+                onNextAction(nextUrl);
                 break;
             case Action.URL:
                 String url = intent.getExtras().getString(KEY_AUDIO_URL);
@@ -265,11 +267,13 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         stopSelf();
     }
 
-    private void onNextAction() {
-        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING
-                || getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PAUSED) {
-            // nothing to do right now
-        }
+    private void onNextAction(String nextTrack) {
+        getNotBlockPlayer().flip(nextTrack);
+//        if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING
+//                || getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PAUSED) {
+//            // nothing to do right now
+//
+//        }
     }
 
     @SuppressLint("SwitchIntDef")
@@ -459,8 +463,6 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void sendTrackDurationsUpdateEvent(long currentDuration, long totalDuration) {
-//todo продумать логику для 0
-        totalDuration=totalDuration==0?1:totalDuration;
         BusProvider.getInstance().post(new TrackProgressEvent(currentDuration, totalDuration));
     }
 

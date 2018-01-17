@@ -104,6 +104,11 @@ public class AndroidAudioPlayer implements
     }
 
     @Override
+    public void flip(String nextTrack) {
+        //todo Flip
+    }
+
+    @Override
     public void toPosition(int position) {
         int res = (position * mediaPlayer.getDuration()) / 100;
         mediaPlayer.seekTo(res);

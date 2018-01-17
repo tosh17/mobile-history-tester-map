@@ -52,7 +52,7 @@ public class ServerFtpLoader extends ServerLoaderProvider {
 
     }
 
-
+//todo https://nikshits.blogspot.ru/2017/02/uploaddownload-file-using-ftp-server-in.html
     private Boolean downloadAndSaveFile(String server, int portNumber,
                                         String user, String password, String filename, File localFile)
             throws IOException {

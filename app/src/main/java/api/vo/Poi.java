@@ -8,16 +8,18 @@ import java.util.List;
 
 public class Poi {
 
-    public final long objId;  //+
+    public final long objId;
     public final String name;
-    public final String type;  //+
-    public final String full_name; //+
-    public final String full_address; //+
+    public final String type;
+    public final String full_name;
+    public final String full_address;
     public final double longitude;
     public final double latitude;
     private List<PoiContent> contents;
+    //todo history
+    private List<PoiContent> history;
     private int currentContent=-1;
-
+    private int currentFlipContent=-1;
     public int status=0;
     public Poi(long objId,@NonNull String name,
                @NonNull String type,@NonNull String full_name,@NonNull String full_address,
@@ -106,6 +108,39 @@ public class Poi {
         return currentContent<contents.size()-1;
     }
 
+
+    public void setFlip(boolean status){
+       if(status) currentFlipContent=currentContent>-1?currentContent:0;
+       else currentFlipContent=-1;
+    }
+    public PoiContent getNextFlipContent(){
+        return contents.get(++currentFlipContent);
+    }
+    public PoiContent getPrevFlipContent(){
+        return contents.get(--currentFlipContent);
+    }
+    public PoiContent getCurrentFlipContent(){
+        //todo добавить wow  локику
+        return contents.get(currentFlipContent);
+    }
+    public boolean isHasNextFlipContent(){
+        return currentFlipContent<contents.size()-1;
+    }
+    public boolean isHasPrevFlipContent(){
+        return currentFlipContent>0;
+    }
+
+    public boolean putContentToHistiry(long id) {
+        for (PoiContent c:contents){
+            if(c.id==id) return putContentToHistiry(c);
+        }
+        return false;
+    }
+    public boolean putContentToHistiry(PoiContent content) {
+        if(contents.contains(content) ){
+            if(!history.contains(content))history.add(content); return true;}
+        return false;
+    }
     public int size(){ return contents.size();}
 
     public List<PoiContent> getAllContent() {

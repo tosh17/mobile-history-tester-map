@@ -41,7 +41,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     private Handler mHandler = new Handler();
 
 
-    private int LetterPerSecond = 13; //количество знаков в секунду
+    private float LetterPerSecond = 12.8f; //количество знаков в секунду
 
     private long timeStartPlay;
     private int progress;
@@ -88,14 +88,17 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     public void play() {
         checkState(State.READY, State.PAUSED);
         Logger.d(LogType.Player, "play tts to " + strTTS);
-        toPlay(strTTS);
+        if(state == State.READY)toPlay(strTTS);
+        else toPosition((int) (100*progress/getDuration()));
 
     }
 
     private void toPlay(String strToPlay) {
         this.strToPlay = strToPlay;
         textToSpeech.speak(strToPlay, TextToSpeech.QUEUE_FLUSH, map);
+
     }
+
 
     public void toPlayPreambula(String strToPlay) {
         this.strToPlay = strToPlay;
@@ -104,12 +107,23 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
     @Override
     public void pause() {
+        checkState(State.PLAYING);
+        state = State.PAUSED;
+        mHandler.removeCallbacks(timer);
+        textToSpeech.stop();
 
+
+    }
+
+    @Override
+    public void flip(String nextTrack) {
+        textToSpeech.stop();
     }
 
     @Override
     public void toPosition(int position) {
         // TODO: сделать перемещение (stop), обрезать текст, отправить в tts
+        state = State.PAUSED;
         int start = position * strTTS.length() / 100;
         int end = strTTS.length();
         char[] buf = new char[end - start];
@@ -120,6 +134,8 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
     @Override
     public void stop() {
+
+
         textToSpeech.stop();
     }
 
@@ -130,7 +146,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
     @Override
     public long getDuration() {
-        long duration = strTTS.length() / LetterPerSecond;
+        long duration = (long) (1000*strTTS.length() / LetterPerSecond);
         return duration;
     }
 
@@ -194,10 +210,9 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
         @Override
         public void run() {
             int delta = strTTS.length() - strToPlay.length();
-            int deltaprogress = 100 * delta / strTTS.length();
-            int deltatime = (int) ((System.currentTimeMillis() - timeStartPlay) / 1000);
-            int d = (int) (100 * deltatime * LetterPerSecond / strToPlay.length());
-            progress = deltaprogress + d;
+            int deltatime = (int) ((System.currentTimeMillis() - timeStartPlay));
+            int d= (int) (delta*1000/LetterPerSecond);
+            progress = (deltatime + d);
             mHandler.postDelayed(timer, 100);
         }
     };
@@ -221,6 +236,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     @Override
     public void onDone(String s) {
         Logger.d(LogType.Player, "tts finish %s", s);
+        if(state == State.PAUSED || state==State.IDLE) return;
         switch (s) {
             case typePlayTrack:
                 onComplete();

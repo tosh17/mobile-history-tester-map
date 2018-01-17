@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import api.vo.AngleAvgLatLng;
 import api.vo.Poi;
 import api.vo.PoiContent;
 import api.vo.PoiInfo;
@@ -23,6 +24,7 @@ import ru.mhistory.bus.event.AppPrepareBDCompliteEvent;
 import ru.mhistory.bus.event.AppPrepareTTSCompliteEvent;
 import ru.mhistory.bus.event.CanPauseEvent;
 import ru.mhistory.bus.event.CanPlayEvent;
+import ru.mhistory.bus.event.LocationChange;
 import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PlaybackStopEvent;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
@@ -68,6 +70,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     private Set<Long> processedIdContent = new HashSet<>();  //прослушаные треки
     private Set<Poi> fullListPoi = new HashSet<>();
     private Set<Poi> processedPois = new HashSet<>();          // прослушаные POI
+    private Poi currentPlayingPoi;
     private Set<Poi> latestPois = new HashSet<>();
     private final LocationTracker locationTracker;
     private LatLng currentLatLng;  // текущее положение
@@ -76,6 +79,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     private boolean isTracing = false; //поигрешность на скачки трекера
     private boolean isStay = true;      //стоим или движемся
     private boolean isPlayerBlock = false;      //плайер блокирован
+    private AngleAvgLatLng avgangle;
     private long preambulaId; //
 
     private boolean startTrackingIsBdComplite = false;
@@ -104,6 +108,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         locationTracker.setLocationUpdateCallbacks(this);
         conf = SearchConf.getSearchPoiConf(context);
         locationTracker.setLocationUpdateIntervalMs(conf.searchTimeUpdate * 1000);
+        avgangle=new AngleAvgLatLng(conf.angleAvgCount);
         conf.setChangeListener(new SearchConf.OnChangeSearchPoiConf() {
             @Override
             public void onChangeSearchPoiConf() {
@@ -111,6 +116,8 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                 if (isStay) setSearchingRadius(conf.radiusStay);
                 else setSearchingRadius(conf.radiusZone3);
                 if (isStay && conf.isStayPlay) nextPoiFind(currentLatLng);
+                fragment.debugShow(conf.debug);
+                if(conf.angleAvgCount!=avgangle.size())avgangle=new AngleAvgLatLng(conf.angleAvgCount);
             }
         });
 
@@ -119,6 +126,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @UiThread
     public void attach(@NonNull PlayerMenuFragment fragment) {
         this.fragment = fragment;
+        fragment.isDebug=conf.debug;
         BusProvider.getInstance().register(this);
 
     }
@@ -199,7 +207,8 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @WorkerThread
     @Override
     public void onLocationChanged(@NonNull final LatLng latLng, long time) {
-        Logger.d(LogType.Location, latLng.toString());
+        ThreadUtil.runOnUiThread(() ->
+                BusProvider.getInstance().post(new LocationChange(latLng,conf.movementAngle)));
         if (!isTracing) {
             currentLatLng = latLng;
             setSearchingRadius(conf.radiusStay);
@@ -235,11 +244,14 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             setSearchingRadius(conf.radiusZone3);
             Logger.d(LogType.Location, "Начало движения");
         }
-        conf.movementAngle = result[1];
+        float speed= 1000*result[0]/(time-lastTimeStamp);
+        if(speed>conf.angleAvgSpeed)
+        conf.movementAngle = avgangle.add(latLng);
         Logger.d(LogType.Location, "onLocationChanged " + "lat=" + latLng.latitude + ":lng" + latLng.longitude
                 + " distance" + result[0] + "; angle=" + result[1]);
 
         currentLatLng = latLng;
+        lastTimeStamp=time;
         notifyUiOnLocationChanged(latLng);
         nextPoiFind(latLng);
     }
@@ -323,7 +335,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                                  @NonNull PoiInfo poiInfo) {
         Logger.d(String.format("New interest point is available (%s), distance to = %s, " +
                 "angle = %s", poi, poiInfo.distanceTo, poiInfo.angle));
-        fragment.setPoi(poi.full_name);
+        fragment.setPoi(poi.full_name,poi.size(),poiInfo.distanceTo);
         BusProvider.getInstance().post(new PoiFoundEvent(poi));
     }
 
@@ -386,7 +398,12 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         ctx.startService(new Intent(ctx, AudioService.class)
                 .setAction(AudioService.Action.NEXT));
     }
-
+    @UiThread
+    public void playPrevTrack() {
+        Context ctx = fragment.getActivity();
+        ctx.startService(new Intent(ctx, AudioService.class)
+                .setAction(AudioService.Action.NEXT));
+    }
     @UiThread
     public void stopPlay() {
         Context ctx = fragment.getActivity();
@@ -437,6 +454,8 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     private void startPlayingAudioUrlForAvailablePoiIfPossible(@NonNull Poi poi, @NonNull PoiInfo poiInfo) {
         //todo переделать логику под wow
+        currentPlayingPoi=poi;
+
         if (poi.size() == 0) {
             Logger.d("There are no audio urls for poi (%s)", poi);
             processedPois.add(poi);
@@ -444,6 +463,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             return;
         }
         String audioUrlToPlay = null;
+        long idUrlToPlay=0;
         PoiContent.AudioType audioTypeToPlay = null;
         while (poi.isHasNextContent()) {
             String audioUrl = poi.getNextContent().getDefaultUrl();
@@ -452,6 +472,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             if (!processedIdContent.contains(idUrl)) {
                 audioUrlToPlay = audioUrl;
                 audioTypeToPlay = audioType;
+                idUrlToPlay=idUrl;
                 //TODO: добовлять после того как трек проигран?
                 processedIdContent.add(idUrl);
                 break;
@@ -471,7 +492,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         if (!isStay && poi.objId != preambulaId) {
             preambulaId = poi.objId;
             isPreabpula = true;
-            preambula = Preambula.get(poiInfo.distanceTo, conf.movementAngle - poiInfo.angle) + " " + poi.name;
+            preambula = Preambula.get(poiInfo.distanceTo, conf.movementAngle - poiInfo.angle,conf) + ", " + poi.name;
         }
 
         isPlayerBlock = true;
@@ -479,6 +500,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             case MP3:
                 ctx.startService(new Intent(ctx, AudioService.class)
                         .setAction(AudioService.Action.URL)
+                        .putExtra(AudioService.KEY_AUDIO_ID, idUrlToPlay)
                         .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay)
                         .putExtra(AudioService.KEY_IS_PREAMBULA, isPreabpula)
                         .putExtra(AudioService.KEY_PREAMBULA, preambula));
@@ -486,6 +508,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             case TTS:
                 ctx.startService(new Intent(ctx, AudioService.class)
                         .setAction(AudioService.Action.TEXT)
+                        .putExtra(AudioService.KEY_AUDIO_ID, idUrlToPlay)
                         .putExtra(AudioService.KEY_AUDIO_URL, audioUrlToPlay)
                         .putExtra(AudioService.KEY_IS_PREAMBULA, isPreabpula)
                         .putExtra(AudioService.KEY_PREAMBULA, preambula));

@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/mp_bg">
 
     <LinearLayout
         android:id="@+id/menuLinerFriend"
@@ -170,69 +171,157 @@
         android:id="@+id/layoutCategory"
         android:layout_width="385dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="2dp"
-        android:layout_marginTop="2dp"
         android:background="@android:color/white"
         android:orientation="vertical"
-        android:visibility="invisible"
+        android:paddingTop="@dimen/mp_margin_2"
+        android:paddingLeft="@dimen/mp_margin_2"
+        android:paddingRight="@dimen/mp_margin_2"
+        android:visibility="visible"
         app:layout_constraintBottom_toTopOf="@id/lPlayer"
         app:layout_constraintTop_toBottomOf="@id/menuLinerPlayerAdv"
         app:layout_constraintVertical_bias="0.0">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="@dimen/mp_margin_1"
-                android:layout_weight="1"
-                android:background="@color/colorBgTrackInfo1">
+            <android.support.v7.widget.CardView
+                android:id="@+id/btnCategoryNature"
+                style="@style/category_button">
 
-                <ImageView
-                    android:layout_width="@dimen/mp_icon_size_h_adv_player"
-                    android:layout_height="@dimen/mp_icon_size_h_adv_player"
-                    android:layout_gravity="center_vertical|end"
-                    android:layout_marginRight="@dimen/mp_margin_3"
-                    app:srcCompat="@drawable/ic_player_category_culture_icon" />
-
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:id="@+id/bgCategoryNature"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="КУльтура" />
+                    android:background="@color/colorPlayerCategoryNature">
 
-            </LinearLayout>
+                    <ImageView
+                        android:id="@+id/icCategoryNature"
+                        style="@style/category_ic"
+                        app:srcCompat="@drawable/ic_player_category_nature_icon" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="@dimen/mp_margin_1"
-                android:layout_weight="1"
-                android:background="@color/colorBgTrackInfo3">
+                    <TextView
+                        android:id="@+id/txtCategoryNature"
+                        style="@style/category_text"
+                        android:text="@string/mp_category_nature" />
 
-                <ImageView
-                    android:layout_width="@dimen/mp_icon_size_h_adv_player"
-                    android:layout_height="@dimen/mp_icon_size_h_adv_player"
-                    android:layout_gravity="center_vertical|end"
-                    android:layout_marginRight="@dimen/mp_margin_3"
-                    app:srcCompat="@drawable/ic_player_category_history_icon" />
+                </LinearLayout>
+            </android.support.v7.widget.CardView>
 
-                <TextView
-                    android:layout_width="wrap_content"
+            <android.support.v7.widget.CardView
+                android:id="@+id/btnCategoryHistory"
+                style="@style/category_button">
+
+                <LinearLayout
+                    android:id="@+id/bgCategoryHistory"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="История" />
-            </LinearLayout>
+                    android:background="@color/colorPlayerCategoryHistory">
+
+                    <ImageView
+                        android:id="@+id/icCategoryHistory"
+                        style="@style/category_ic"
+                        app:srcCompat="@drawable/ic_player_category_history_icon" />
+
+                    <TextView
+                        android:id="@+id/txtCategoryHistory"
+                        style="@style/category_text"
+                        android:text="@string/mp_category_history" />
+                </LinearLayout>
+            </android.support.v7.widget.CardView>
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <android.support.v7.widget.CardView
+                android:id="@+id/btnCategoryPeople"
+            style="@style/category_button">
+
+                <LinearLayout
+                    android:id="@+id/bgCategoryPeople"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/colorPlayerCategoryPeople">
+
+                    <ImageView
+                        android:id="@+id/icCategoryPeople"
+                        style="@style/category_ic"
+                        app:srcCompat="@drawable/ic_player_category_people_icon" />
+
+                    <TextView
+                        android:id="@+id/txtCategoryPeople"
+                        style="@style/category_text"
+                        android:text="@string/mp_category_people" />
+
+                </LinearLayout>
+            </android.support.v7.widget.CardView>
+
+            <android.support.v7.widget.CardView
+                android:id="@+id/btnCategoryCulture"
+                style="@style/category_button">
+
+                <LinearLayout
+                    android:id="@+id/bgCategoryCulture"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    android:layout_weight="1"
+                    android:background="@color/colorPlayerCategoryCulture">
+
+                    <ImageView
+                        android:id="@+id/icCategoryCulture"
+                        style="@style/category_ic"
+                        app:srcCompat="@drawable/ic_player_category_culture_icon" />
+
+                    <TextView
+                        android:id="@+id/txtCategoryCulture"
+                        style="@style/category_text"
+                        android:text="@string/mp_category_culture" />
+                </LinearLayout>
+            </android.support.v7.widget.CardView>
+        </LinearLayout>
+
+        <android.support.v7.widget.CardView
+            android:id="@+id/btnCategoryALL"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/player_category_all_h"
+            android:layout_margin="@dimen/player_category_button_margin">
+
+            <TextView
+                style="@style/category_text"
+                android:text="@string/mp_category_all"
+                android:textColor="@android:color/black" />
+        </android.support.v7.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="@dimen/player_category_ic_margin"
+            android:elevation="5dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/mp_size_h_adv_player_line"
+                android:layout_gravity="bottom"
+                android:layout_marginTop="@dimen/mp_margin_h_adv_player_line"
+                android:background="@color/mp_category_line"
+                android:scaleType="fitXY" />
+        </LinearLayout>
+
     </LinearLayout>
 
     <LinearLayout
         android:id="@+id/layoutPoiInfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="2dp"
-        android:layout_marginTop="2dp"
+        android:layout_marginBottom="@dimen/mp_margin_between_ll"
+        android:layout_marginTop="@dimen/mp_margin_between_ll"
+        android:visibility="invisible"
         app:layout_constraintBottom_toTopOf="@id/lPlayer"
         app:layout_constraintTop_toBottomOf="@id/menuLinerPlayerAdv">
 
@@ -242,12 +331,12 @@
             android:layout_weight="1" />
 
         <FrameLayout
-            android:id="@+id/fabPrev"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:id="@+id/mpButtonPrevTrack"
+            android:layout_width="@dimen/player_poi_info_next_track_button_size"
+            android:layout_height="@dimen/player_poi_info_next_track_button_size"
             android:layout_gravity="center"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
+            android:layout_marginLeft="@dimen/mp_margin_1"
+            android:layout_marginRight="@dimen/mp_margin_1"
             android:background="@drawable/ripple_white"
             android:clickable="true">
 
@@ -258,11 +347,11 @@
                 app:srcCompat="@drawable/button_round_side" />
 
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="@dimen/ic_player_poi_info_next_poi_button_size_w"
+                android:layout_height="@dimen/ic_player_poi_info_next_poi_button_size_h"
                 android:layout_gravity="center"
                 android:rotation="180"
-                app:srcCompat="@drawable/ic_player_capegory_next_poi_button"
+                app:srcCompat="@drawable/ic_player_poi_info_next_poi_button"
                 tools:ignore="VectorDrawableCompat" />
 
         </FrameLayout>
@@ -278,29 +367,37 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <android.support.v4.widget.Space
-                android:id="@+id/spaceTrackInfo"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-
             <TextView
                 android:id="@+id/textViewTrackInfo"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="@dimen/nv_track_info_text_margin"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/mp_margin_1"
+                android:layout_weight="1"
+                android:gravity="bottom"
                 android:text="Усть-Ордынский \n Бурятский \n автономный округ"
                 android:textColor="@android:color/white"
-                android:textSize="@dimen/nv_track_info_text_size" />
+                android:textSize="@dimen/player_poi_info_text_info_size" />
 
             <TextView
-
                 android:id="@+id/textViewTrackInfoCount"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="@dimen/nv_track_info_text_margin"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="@dimen/mp_margin_1"
+                android:layout_weight="3"
                 android:text="17 треков"
                 android:textColor="@android:color/white"
-                android:textSize="@dimen/nv_track_info_text_count_size" />
+                android:textSize="@dimen/player_poi_info_text_count_size" />
+
+            <TextView
+                android:id="@+id/textViewTrackInfoDistance"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginRight="@dimen/mp_margin_1"
+                android:layout_weight="3"
+                android:gravity="right"
+                android:text="5 км до объекта"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/player_poi_info_text_distance_size" />
 
         </LinearLayout>
 
@@ -310,12 +407,12 @@
             android:layout_weight="1" />
 
         <FrameLayout
-            android:id="@+id/fabNext"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:id="@+id/mpButtonNextTrack"
+            android:layout_width="@dimen/player_poi_info_next_track_button_size"
+            android:layout_height="@dimen/player_poi_info_next_track_button_size"
             android:layout_gravity="center"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
+            android:layout_marginLeft="@dimen/mp_margin_1"
+            android:layout_marginRight="@dimen/mp_margin_1"
             android:background="@drawable/ripple_white"
             android:clickable="true">
 
@@ -326,10 +423,10 @@
                 app:srcCompat="@drawable/button_round_side" />
 
             <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="@dimen/ic_player_poi_info_next_poi_button_size_w"
+                android:layout_height="@dimen/ic_player_poi_info_next_poi_button_size_h"
                 android:layout_gravity="center"
-                app:srcCompat="@drawable/ic_player_capegory_next_poi_button"
+                app:srcCompat="@drawable/ic_player_poi_info_next_poi_button"
                 tools:ignore="VectorDrawableCompat" />
 
         </FrameLayout>
@@ -345,8 +442,6 @@
         android:id="@+id/lPlayer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/nv_mardin"
-        android:layout_marginBottom="26dp"
         android:layout_weight="5"
         android:background="@android:color/white"
         android:elevation="2dp"
@@ -360,7 +455,9 @@
             android:id="@+id/textViewPlayerTrackInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/nv_player_track_info_margin"
+            android:layout_gravity="bottom"
+            android:layout_margin="@dimen/mp_margin_1"
+            android:layout_marginBottom="0dp"
             android:ellipsize="marquee"
             android:focusable="true"
             android:focusableInTouchMode="true"
@@ -370,64 +467,58 @@
             android:text="4/17 Интересные факты о траля-ля траляля бегущая строка"
             android:textSize="@dimen/nv_player_track_info_text_size" />
 
+        <SeekBar
+            android:id="@+id/seekBarPlayer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="@dimen/player_time_margin_top"
+            android:max="100"
+            android:progress="25" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_marginTop="@dimen/player_time_margin_top"
+            android:orientation="horizontal">
 
-            <SeekBar
-                android:id="@+id/seekBarPlayer"
+            <TextView
+                android:id="@+id/textViewPlayerCurrentTime"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                android:max="100"
-                android:progress="25" />
+                android:layout_gravity="top"
+                android:layout_marginLeft="@dimen/mp_margin_4"
+                android:layout_weight="1"
+                android:text="0:35"
+                android:textAlignment="textStart"
+                android:textSize="@dimen/nv_player_text_time_size"
+                tools:ignore="RtlCompat" />
 
-            <LinearLayout
+            <TextView
+                android:id="@+id/textViewPlayerTotalTime"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/textViewPlayerCurrentTime"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top"
-                    android:textAlignment="textStart"
-                    android:layout_marginLeft="@dimen/mp_margin_2"
-                    android:layout_weight="1"
-                    android:text="0:35"
-                    android:textSize="@dimen/nv_player_text_time_size"
-                    tools:ignore="RtlCompat" />
-
-                <TextView
-                    android:id="@+id/textViewPlayerTotalTime"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAlignment="textEnd"
-                    android:layout_margin="-5dp"
-                    android:layout_marginRight="@dimen/mp_margin_2"
-                    android:layout_weight="1"
-                    android:text="-1:54"
-                    android:textSize="@dimen/nv_player_text_time_size"
-                    tools:ignore="RtlCompat" />
-            </LinearLayout>
+                android:layout_marginRight="@dimen/mp_margin_4"
+                android:layout_weight="1"
+                android:text="-1:54"
+                android:textAlignment="textEnd"
+                android:textSize="@dimen/nv_player_text_time_size"
+                tools:ignore="RtlCompat" />
         </LinearLayout>
 
         <LinearLayout
+
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/nv_player_control_margin_bottom"
-            android:layout_marginLeft="@dimen/mp_margin_1"
-            android:layout_marginRight="@dimen/mp_margin_1"
-            android:layout_marginTop="@dimen/nv_player_control_margin_top"
+            android:layout_height="@dimen/player_controll_button_size"
+            android:layout_margin="@dimen/mp_margin_1"
             android:orientation="horizontal">
 
             <FrameLayout
+                android:id="@+id/buttonPrevTrack"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="left"
-                android:layout_marginRight="20dp"
+                android:layout_marginRight="@dimen/player_controll_button_margin_left_right"
                 android:layout_weight="2"
                 android:background="@drawable/ripple_white"
                 android:clickable="true">
@@ -440,8 +531,8 @@
 
                 <ImageView
                     android:id="@+id/imageViewFF"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="@dimen/player_controll_ff_button_size_w"
+                    android:layout_height="@dimen/player_controll_all_button_size_h"
                     android:layout_gravity="center"
                     android:layout_weight="1"
                     android:rotation="180"
@@ -455,8 +546,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
-                android:layout_marginLeft="10dp"
-                android:layout_marginRight="10dp"
+                android:layout_marginLeft="@dimen/player_controll_button_margin_middle"
+                android:layout_marginRight="@dimen/player_controll_button_margin_middle"
                 android:layout_weight="2"
                 android:background="@drawable/ripple_white"
                 android:clickable="true">
@@ -469,8 +560,8 @@
 
                 <ImageView
                     android:id="@+id/imageViewPausePlay"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="@dimen/player_controll_play_button_size_w"
+                    android:layout_height="@dimen/player_controll_all_button_size_h"
                     android:layout_gravity="center"
                     app:srcCompat="@drawable/ic_player_controll_play_button"
                     tools:ignore="VectorDrawableCompat" />
@@ -478,10 +569,11 @@
             </FrameLayout>
 
             <FrameLayout
+                android:id="@+id/buttonNextTrack"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="right"
-                android:layout_marginLeft="20dp"
+                android:layout_marginLeft="@dimen/player_controll_button_margin_left_right"
                 android:layout_weight="2"
                 android:background="@drawable/ripple_white"
                 android:clickable="true">
@@ -494,8 +586,8 @@
 
                 <ImageView
                     android:id="@+id/imageViewRew"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="@dimen/player_controll_ff_button_size_w"
+                    android:layout_height="@dimen/player_controll_all_button_size_h"
                     android:layout_gravity="center"
                     app:srcCompat="@drawable/ic_player_controll_ff_button"
                     tools:ignore="VectorDrawableCompat" />
@@ -510,13 +602,15 @@
         android:layout_width="match_parent"
         android:layout_height="26dp"
         app:layout_constraintBottom_toBottomOf="parent" />
-
+<ScrollView
+    android:id="@+id/scrollTest"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:visibility="gone">
     <TextView
         android:id="@+id/textTest"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/white"
-        android:elevation="100dp"
         android:textSize="20sp"
-        android:visibility="gone" />
+         /></ScrollView>
 </android.support.constraint.ConstraintLayout>

@@ -9,13 +9,16 @@ import ru.mhistory.Prefs;
  */
 
 public class SearchConf {
-    public int searchTimeUpdate=1;
+    public boolean debug = false;
+
+
+    public int searchTimeUpdate = 1;
     //todo настраевоемое или расчетное?
     public boolean isStayPlay = true;
     public int searchSquare = 100000;
     public int reSearchSquare = 50000;
 
-    public int deltaDistanceToTracking = 100;
+    public int deltaDistanceToTracking = 10;
     public int radiusStay = 5000;
     public int radiusZone3 = 10000;
     public int speedToMove = 1;
@@ -24,6 +27,8 @@ public class SearchConf {
     public float deltaAngleZona2 = 45;
     public int radiusZone2 = 2000;
     public float deltaAngleZona3 = 120;
+    public int angleAvgSpeed = 1;
+    public int angleAvgCount = 3;
 
     private static SearchConf conf = null;
     private OnChangeSearchPoiConf onChangeSearchPoiCon;
@@ -45,7 +50,8 @@ public class SearchConf {
 
     public void load(Context context) {
         Prefs pref = new Prefs(context);
-        searchTimeUpdate= pref.getInt(Prefs.KEY_POI_SEARCH_TIME_UPDATE, searchTimeUpdate);
+        debug = pref.getBoolean(Prefs.KEY_NV_DEBUG_SHOW, debug);
+        searchTimeUpdate = pref.getInt(Prefs.KEY_POI_SEARCH_TIME_UPDATE, searchTimeUpdate);
         isStayPlay = pref.getBoolean(Prefs.KEY_POI_SEARCH_IS_STAY_PLAY, isStayPlay);
         deltaDistanceToTracking = pref.getInt(Prefs.KEY_POI_SEARCH_deltaDistanceToTracking, deltaDistanceToTracking);
         radiusStay = pref.getInt(Prefs.KEY_POI_SEARCH_radiusStay, radiusStay);
@@ -54,12 +60,14 @@ public class SearchConf {
         deltaAngleZona2 = pref.getFloat(Prefs.KEY_POI_SEARCH_deltaAngleZona2, deltaAngleZona2);
         radiusZone2 = pref.getInt(Prefs.KEY_POI_SEARCH_radiusZone2, radiusZone2);
         deltaAngleZona3 = pref.getFloat(Prefs.KEY_POI_SEARCH_deltaAngleZona3, deltaAngleZona3);
-
+        angleAvgCount = pref.getInt(Prefs.KEY_POI_SEARCH_ANGLE_AVG, angleAvgCount);
+        angleAvgSpeed = pref.getInt(Prefs.KEY_POI_SEARCH_ANGLE_AVG_SPEED, angleAvgSpeed);
 
     }
 
     public void save(Context context) {
         Prefs pref = new Prefs(context);
+        pref.putBoolean(Prefs.KEY_NV_DEBUG_SHOW, debug);
         pref.putInt(Prefs.KEY_POI_SEARCH_TIME_UPDATE, searchTimeUpdate);
         pref.putBoolean(Prefs.KEY_POI_SEARCH_IS_STAY_PLAY, isStayPlay);
         pref.putInt(Prefs.KEY_POI_SEARCH_deltaDistanceToTracking, deltaDistanceToTracking);
@@ -69,6 +77,8 @@ public class SearchConf {
         pref.putFloat(Prefs.KEY_POI_SEARCH_deltaAngleZona2, deltaAngleZona2);
         pref.putInt(Prefs.KEY_POI_SEARCH_radiusZone2, radiusZone2);
         pref.putFloat(Prefs.KEY_POI_SEARCH_deltaAngleZona3, deltaAngleZona3);
+        pref.putInt(Prefs.KEY_POI_SEARCH_ANGLE_AVG, angleAvgCount);
+        pref.putInt(Prefs.KEY_POI_SEARCH_ANGLE_AVG_SPEED, angleAvgSpeed);
         update();
     }
 

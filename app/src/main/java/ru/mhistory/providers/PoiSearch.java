@@ -27,6 +27,7 @@ public class PoiSearch {
         return new Pair<>(lefBotom, rightTop);
     }
 
+
     private static double calcLat(LatLng coord, int dist) {
         double lat = Math.toRadians(coord.latitude);
         double lng = Math.toRadians(coord.longitude);

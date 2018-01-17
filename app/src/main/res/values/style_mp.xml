@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="category_ic">
+        <item name="android:layout_width">@dimen/player_category_ic_all_size_w</item>
+        <item name="android:layout_height">@dimen/player_category_ic_all_size_h</item>
+        <item name="android:layout_margin">@dimen/player_category_ic_margin</item>
+        <item name="android:layout_gravity">center_vertical</item>
+    </style>
+
+    <style name="category_text">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">@dimen/player_category_text_size</item>
+    </style>
+
+    <style name="category_button">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_margin">@dimen/player_category_button_margin</item>
+        <item name="android:layout_weight">1</item>
+    </style>
+
+    <style name="map_round_button">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:scaleType">fitXY</item>
+
+    </style>
+
+    <style name="map_ic">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:layout_margin">@dimen/map_ic_margin</item>
+        <item name="android:layout_weight">1</item>
+    </style>
+
+    <style name="map_ic_frame">
+        <item name="android:layout_width">@dimen/map_ic_frame_size</item>
+        <item name="android:layout_height">@dimen/map_ic_frame_size</item>
+        <item name="android:layout_gravity">left</item>
+        <item name="android:layout_marginBottom">@dimen/map_ic_frame_margin_bottom</item>
+
+    </style>
+
+</resources>

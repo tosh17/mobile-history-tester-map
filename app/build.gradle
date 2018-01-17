@@ -27,8 +27,8 @@ ext {
     _minSdkVersion = 16
     _targetSdkVersion = 25
     _buildToolsVersion = '24.0.2'
-    _versionName = '1.0.031'
-    _versionCode = 15
+    _versionName = '1.0.041'
+    _versionCode = 16
     _supportLibVersion = '26.1.0'
     _gmsVersion = '10.2.1'
     _mapsUtils = '0.5'
@@ -107,6 +107,7 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support:design:26.1.0'
+    compile 'com.android.support:cardview-v7:26.1.0'
     compile "com.google.android.gms:play-services-maps:$_gmsVersion"
     compile "com.google.android.gms:play-services-location:$_gmsVersion"
     compile "com.google.android.gms:play-services-places:$_gmsVersion"
