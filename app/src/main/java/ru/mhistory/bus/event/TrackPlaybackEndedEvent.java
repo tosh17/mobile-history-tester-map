@@ -8,7 +8,9 @@ public class TrackPlaybackEndedEvent {
     public boolean trackFulfilled;
     public boolean startTracking;
 
-    public TrackPlaybackEndedEvent(@NonNull String trackName) {
+    public TrackPlaybackEndedEvent(@NonNull String trackName,long id,boolean startTracking) {
         this.trackName = trackName;
+        this.id=id;
+        this.startTracking=startTracking;
     }
 }

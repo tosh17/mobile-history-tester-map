@@ -1,10 +1,13 @@
 package api.vo;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import ru.mhistory.realm.RealmFactory;
 
 public class Poi {
 
@@ -16,44 +19,46 @@ public class Poi {
     public final double longitude;
     public final double latitude;
     private List<PoiContent> contents;
-    //todo history
-    private List<PoiContent> history;
-    private int currentContent=-1;
-    private int currentFlipContent=-1;
-    public int status=0;
-    public Poi(long objId,@NonNull String name,
-               @NonNull String type,@NonNull String full_name,@NonNull String full_address,
+    private List<PoiContent> history=new ArrayList<>();
+    private PoiContent currentContent;
+    private PoiContent currentFlipContent;
+    private int currentFlipPosition;
+    private boolean isFlip=false;
+    public int status = 0;
+
+    public Poi(long objId, @NonNull String name,
+               @NonNull String type, @NonNull String full_name, @NonNull String full_address,
                double longitude,
                double latitude,
                @NonNull List<PoiContent> contents) {
-        this.objId=objId;
+        this.objId = objId;
         this.name = name;
-        this.type=type;
-        this.full_name=full_name;
-        this.full_address=full_address;
+        this.type = type;
+        this.full_name = full_name;
+        this.full_address = full_address;
         this.longitude = longitude;
         this.latitude = latitude;
         this.contents = Collections.unmodifiableList(contents);
     }
-    public Poi(long objId,@NonNull String name,
-               @NonNull String type,@NonNull String full_name,@NonNull String full_address,
+
+    public Poi(long objId, @NonNull String name,
+               @NonNull String type, @NonNull String full_name, @NonNull String full_address,
                double longitude,
                double latitude) {
-        this.objId=objId;
+        this.objId = objId;
         this.name = name;
-        this.type=type;
-        this.full_name=full_name;
-        this.full_address=full_address;
+        this.type = type;
+        this.full_name = full_name;
+        this.full_address = full_address;
         this.longitude = longitude;
         this.latitude = latitude;
-        }
+    }
 
 
-
-    public Poi addContent(PoiContent content){
-      if(contents==null) contents=new ArrayList<>()  ;
-       contents.add(content);
-       return this;
+    public Poi addContent(PoiContent content) {
+        if (contents == null) contents = new ArrayList<>();
+        contents.add(content);
+        return this;
     }
 
     @Override
@@ -96,54 +101,108 @@ public class Poi {
                 '}';
     }
 
-    public PoiContent getNextContent(){
-        //todo добавить wow  локику
-       return contents.get(++currentContent);
-    }
-    public PoiContent getCurrentContent(){
-        //todo добавить wow  локику
-        return contents.get(currentContent);
-    }
-    public boolean isHasNextContent(){
-        return currentContent<contents.size()-1;
+    public PoiContent getNextContent() {
+        for (PoiContent content : contents)
+            if (!history.contains(content)) {
+                currentContent = content;
+                return currentContent;
+            }
+        return null;
     }
 
-
-    public void setFlip(boolean status){
-       if(status) currentFlipContent=currentContent>-1?currentContent:0;
-       else currentFlipContent=-1;
-    }
-    public PoiContent getNextFlipContent(){
-        return contents.get(++currentFlipContent);
-    }
-    public PoiContent getPrevFlipContent(){
-        return contents.get(--currentFlipContent);
-    }
-    public PoiContent getCurrentFlipContent(){
+    public PoiContent getCurrentContent() {
         //todo добавить wow  локику
-        return contents.get(currentFlipContent);
+        return currentContent;
     }
-    public boolean isHasNextFlipContent(){
-        return currentFlipContent<contents.size()-1;
+  public boolean isHasNext(){
+       return contents.indexOf(currentContent)<size()-1;
+  }
+    public boolean isHasPrev(){
+        return contents.indexOf(currentContent)>0;
     }
-    public boolean isHasPrevFlipContent(){
-        return currentFlipContent>0;
-    }
-
-    public boolean putContentToHistiry(long id) {
-        for (PoiContent c:contents){
-            if(c.id==id) return putContentToHistiry(c);
+    public void setFlip(boolean flipVal) {
+        if(isFlip==flipVal) {
+            return;
         }
-        return false;
+        else {
+            isFlip=flipVal;}
+        if (flipVal && currentContent != null){
+            currentFlipPosition = contents.indexOf(currentContent);}
+        else currentFlipPosition = -1;
     }
-    public boolean putContentToHistiry(PoiContent content) {
-        if(contents.contains(content) ){
-            if(!history.contains(content))history.add(content); return true;}
-        return false;
-    }
-    public int size(){ return contents.size();}
 
+    public PoiContent getNextFlipContent() {
+        return contents.get(++currentFlipPosition);
+    }
+
+    public PoiContent getPrevFlipContent() {
+        return contents.get(--currentFlipPosition);
+    }
+
+    public PoiContent getCurrentFlipContent() {
+        return contents.get(currentFlipPosition);
+    }
+
+    public boolean isHasNextFlipContent() {
+        return currentFlipPosition < size() - 1;
+    }
+
+    public boolean isHasPrevFlipContent() {
+        return currentFlipPosition > 0;
+    }
+
+
+    public boolean isThisPoiContent(PoiContent content) {
+        return contents.contains(content);
+    }
+
+    public boolean putContentToHistory(long id) {
+        return putContentToHistory(findContentByid(id));
+    }
+    public boolean putContentToHistory(long id, Context context) {
+        PoiContent historyContent=findContentByid(id);
+        if(!history.contains(historyContent)) {
+            history.add(historyContent);
+            RealmFactory.getInstance(context).saveHistory(this.objId,id);
+        }
+        return isPoiComplete();
+    }
+    public PoiContent findContentByid(long id) {
+        for (PoiContent c : contents) {
+            if (c.id == id) return c;
+        }
+        return null;
+    }
+
+    public boolean putContentToHistory(PoiContent content) {
+        history.add(content);
+        return isPoiComplete();
+    }
+
+    public boolean isPoiComplete() {
+        return !(history.size() < size());
+    }
+
+    public int size() {
+        return contents.size();
+    }
+    public int poiActiveStatus(){
+        if(history.size()==0) return 1;
+        if(isPoiComplete()) return 3;
+        return 2;
+    }
     public List<PoiContent> getAllContent() {
         return contents;
+    }
+
+    public int getCurrentPosition(){
+        if(isFlip) return currentFlipPosition;
+        if(currentContent==null) return 0;
+        return contents.indexOf(currentContent);
+    }
+
+    public void clearHistory() {
+        history.clear();
+      status=0;
     }
 }

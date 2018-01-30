@@ -3,6 +3,8 @@
     <color name="mp_bg">#60ffffff</color>
     <color name="mp_button_on">#1f3365</color>
     <color name="mp_category_line">#f6f6f6</color>
+    <color name="mp_player_enable_btn">#4B4B4A</color>
+    <color name="mp_player_disable_btn">#aeb9c0</color>
 
     <color name="colorPlayerCategoryUnCheck">#ffffff</color>
     <color name="colorPlayerCategoryNature">#0267ff</color>

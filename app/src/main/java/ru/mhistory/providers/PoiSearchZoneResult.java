@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -37,6 +38,11 @@ public final class PoiSearchZoneResult {
     }
 
     @Nullable
+    public Pair<PoiInfo, Poi> getNearestPoi(boolean isStay){
+        if(isStay) return getNearestPoi();
+        return getNearestZonePoi();
+    }
+    @Nullable
     public Pair<PoiInfo, Poi> getNearestPoi() {
         Map.Entry<PoiInfo, Poi> entry = null;
         if (stay.size() > 0) {
@@ -45,6 +51,7 @@ public final class PoiSearchZoneResult {
         return entry != null ? new Pair<>(entry.getKey(), entry.getValue()) : null;
     }
 
+    @Nullable
     public Pair<PoiInfo, Poi> getNearestZonePoi() {
         Map.Entry<PoiInfo, Poi> entry = null;
         if (zone1.size() > 0) {
@@ -53,6 +60,52 @@ public final class PoiSearchZoneResult {
             entry = zone2.entrySet().iterator().next();
         } else if (zone3.size() > 0) {
             entry = zone3.entrySet().iterator().next();
+        }
+        return entry != null ? new Pair<>(entry.getKey(), entry.getValue()) : null;
+    }
+    @Nullable
+    public Pair<PoiInfo, Poi> getNextNearestPoi(boolean isStay,Set<Poi> last){
+        if(last==null) return getNearestPoi(isStay);
+        if(isStay) return getNextNearestPoi(last);
+        return getNextNearestZonePoi(last);
+    }
+    @Nullable
+    public Pair<PoiInfo, Poi> getNextNearestPoi(Set<Poi> last) {
+        Map.Entry<PoiInfo, Poi> entry = null;
+
+        Iterator<Map.Entry<PoiInfo, Poi>> iterator = stay.entrySet().iterator();
+        while(iterator.hasNext()){
+            entry=iterator.next();
+            if(last.contains(entry.getValue())) entry = null;
+            else break;
+        }
+        return entry != null ? new Pair<>(entry.getKey(), entry.getValue()) : null;
+    }
+    @Nullable
+    public Pair<PoiInfo, Poi> getNextNearestZonePoi(Set<Poi> last) {
+        Map.Entry<PoiInfo, Poi> entry = null;
+
+        Iterator<Map.Entry<PoiInfo, Poi>> iterator = zone1.entrySet().iterator();
+        while(iterator.hasNext()){
+            entry=iterator.next();
+            if(last.contains(entry.getValue())) entry = null;
+            else break;
+        }
+        if(entry!=null) return new Pair<>(entry.getKey(), entry.getValue());
+
+         iterator = zone2.entrySet().iterator();
+        while(iterator.hasNext()){
+            entry=iterator.next();
+            if(last.contains(entry.getValue())) entry = null;
+            else break;
+        }
+        if(entry!=null) return new Pair<>(entry.getKey(), entry.getValue());
+
+        iterator = zone3.entrySet().iterator();
+        while(iterator.hasNext()){
+            entry=iterator.next();
+            if(last.contains(entry.getValue())) entry = null;
+            else break;
         }
         return entry != null ? new Pair<>(entry.getKey(), entry.getValue()) : null;
     }
@@ -65,11 +118,6 @@ public final class PoiSearchZoneResult {
         return zone1.size() == 0
                 && zone2.size() == 0
                 && zone3.size() == 0;
-    }
-
-    public Pair<PoiInfo, Poi> getNearestPoi(boolean isStay) {
-        if (isStay) return getNearestPoi();
-        return getNearestZonePoi();
     }
 
     public boolean isEmpty(boolean isStay) {
@@ -103,32 +151,30 @@ public final class PoiSearchZoneResult {
         str.append("<font color=#DF01D7>");
         str.append("Zona 0:<br>");
         for (PoiInfo p : zone0.keySet()) {
-            angle = Math.abs(p.angle - currentAngle);
-            angle = angle > 180 ? (angle - 360) : angle;
+            angle = currentAngle-p.angle;
             str.append(zone0.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "<br>");
         }
         str.append("</font>");
         str.append("<font color=#04B431>");
         str.append("Zona 1:<br>");
         for (PoiInfo p : zone1.keySet()) {
-            angle = Math.abs(p.angle - currentAngle);
-            angle = angle > 180 ? (angle - 360) : angle;
+//            angle = Math.abs(p.angle - currentAngle);
+//            angle = angle > 180 ? (angle - 360) : angle;
+            angle = currentAngle-p.angle;
             str.append(zone1.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "<br>");
         }
         str.append("</font>");
         str.append("<font color=#0404B4>");
         str.append("Zona 2:<br>");
         for (PoiInfo p : zone2.keySet()) {
-            angle = Math.abs(p.angle - currentAngle);
-            angle = angle > 180 ? (angle - 360) : angle;
+            angle = currentAngle-p.angle;
             str.append(zone2.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "<br>");
         }
         str.append("</font>");
         str.append("<font color=#FF8000>");
         str.append("Zona 3:<br>");
         for (PoiInfo p : zone3.keySet()) {
-            angle = Math.abs(p.angle - currentAngle);
-            angle = angle > 180 ? (angle - 360) : angle;
+            angle = currentAngle-p.angle;
             str.append(zone3.get(p).name + " distanse=" + p.distanceTo + " Angle= " + angle + "<br>");
         }
         str.append("</font>");

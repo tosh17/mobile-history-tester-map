@@ -32,6 +32,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.nononsenseapps.filepicker.FilePickerActivity;
+import com.yandex.metrica.YandexMetrica;
 
 import butterknife.BindDrawable;
 import butterknife.BindView;
@@ -40,6 +41,7 @@ import butterknife.OnClick;
 import butterknife.Unbinder;
 import ru.mhistory.R;
 import ru.mhistory.common.util.PermissionUtils;
+import ru.mhistory.playback.AudioService;
 import ru.mhistory.screen.map.MapPresenter;
 
 public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarChangeListener {
@@ -63,9 +65,9 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     @BindView(R.id.lPlayer)
     LinearLayout layoutPlayer;
 
-
-    @BindView(R.id.RefreshButton) //Refresh button
-            LinearLayout buttonRefresh;
+    //Refresh button
+    @BindView(R.id.RefreshButton)
+    LinearLayout buttonRefresh;
     @BindView(R.id.RefreshOn)
     ImageView buttonRefreshOn;
     boolean isOnButtonRefresh = true;
@@ -76,6 +78,70 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     ImageView buttonListenPoiOn;
     boolean isOnButtonListenPoi = false;
 
+
+    //CATEGORY
+    @BindView(R.id.bgCategoryNature)
+    LinearLayout bgCategoryNature;
+    @BindView(R.id.icCategoryNature)
+    ImageView icCategoryNature;
+    @BindView(R.id.txtCategoryNature)
+    TextView txtCategoryNature;
+    private boolean isCategoryNaturePress = true;
+
+    @BindView(R.id.bgCategoryHistory)
+    LinearLayout bgCategoryHistory;
+    @BindView(R.id.icCategoryHistory)
+    ImageView icCategoryHistory;
+    @BindView(R.id.txtCategoryHistory)
+    TextView txtCategoryHistory;
+    private boolean isCategoryHistoryPress = true;
+
+    @BindView(R.id.bgCategoryPeople)
+    LinearLayout bgCategoryPeople;
+    @BindView(R.id.icCategoryPeople)
+    ImageView icCategoryPeople;
+    @BindView(R.id.txtCategoryPeople)
+    TextView txtCategoryPeople;
+    private boolean isCategoryPeoplePress = true;
+
+    @BindView(R.id.bgCategoryCulture)
+    LinearLayout bgCategoryCulture;
+    @BindView(R.id.icCategoryCulture)
+    ImageView icCategoryCulture;
+    @BindView(R.id.txtCategoryCulture)
+    TextView txtCategoryCulture;
+    private boolean isCategoryCulturePress = true;
+
+    //PlayerControl
+    @BindView(R.id.imageViewPausePlay)
+    ImageView imageViewPausePlay;
+    boolean isPlay = false;
+    @BindDrawable(R.drawable.ic_player_controll_pause_button)
+    Drawable pauseDrawable;
+    @BindDrawable(R.drawable.ic_player_controll_play_button)
+    Drawable playDrawable;
+    @BindDrawable(R.drawable.ic_player_poi_info_shape)
+    Drawable poiInfoShape;
+    @BindView(R.id.imageViewRew)
+    ImageView icButtonNextTrack;
+    @BindView(R.id.buttonNextTrack)
+    View buttonNextTrack;
+    @BindView(R.id.imageViewFF)
+    ImageView icButtonPrevTrack;
+    @BindView(R.id.buttonPrevTrack)
+    View buttonPrevTrack;
+
+    @BindView(R.id.textViewPlayerTrackInfo)
+    TextView textViewPlayerTrackInfo;
+    @BindView(R.id.seekBarPlayer)
+    SeekBar seekBarPlayer;
+    private boolean isSeekBarTouch = false;
+    @BindView(R.id.textViewPlayerCurrentTime)
+    TextView textViewPlayerCurrentTime;
+    @BindView(R.id.textViewPlayerTotalTime)
+    TextView textViewPlayerTotalTime;
+
+    //info panel
     @BindView(R.id.layoutPoiInfo)
     LinearLayout layoutPoiInfo;
     @BindView(R.id.layoutCategory)
@@ -90,66 +156,13 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     @BindView(R.id.textViewTrackInfoDistance)
     TextView textViewTrackInfoDistance;
 
-    @BindView(R.id.textViewPlayerTrackInfo)
-    TextView textViewPlayerTrackInfo;
-    @BindView(R.id.seekBarPlayer)
-    SeekBar seekBarPlayer;
-    private boolean isSeekBarTouch = false;
-    @BindView(R.id.textViewPlayerCurrentTime)
-    TextView textViewPlayerCurrentTime;
-    @BindView(R.id.textViewPlayerTotalTime)
-    TextView textViewPlayerTotalTime;
-
-    //CATEGORY
-    @BindView(R.id.bgCategoryNature)
-    LinearLayout bgCategoryNature;
-    @BindView(R.id.icCategoryNature)
-    ImageView icCategoryNature;
-    @BindView(R.id.txtCategoryNature)
-    TextView txtCategoryNature;
-    private boolean isCategoryNaturePress=true;
-
-    @BindView(R.id.bgCategoryHistory)
-    LinearLayout bgCategoryHistory;
-    @BindView(R.id.icCategoryHistory)
-    ImageView icCategoryHistory;
-    @BindView(R.id.txtCategoryHistory)
-    TextView txtCategoryHistory;
-    private boolean isCategoryHistoryPress=true;
-
-    @BindView(R.id.bgCategoryPeople)
-    LinearLayout bgCategoryPeople;
-    @BindView(R.id.icCategoryPeople)
-    ImageView icCategoryPeople;
-    @BindView(R.id.txtCategoryPeople)
-    TextView txtCategoryPeople;
-    private boolean isCategoryPeoplePress=true;
-
-    @BindView(R.id.bgCategoryCulture)
-    LinearLayout bgCategoryCulture;
-    @BindView(R.id.icCategoryCulture)
-    ImageView icCategoryCulture;
-    @BindView(R.id.txtCategoryCulture)
-    TextView txtCategoryCulture;
-    private boolean isCategoryCulturePress=true;
-
-
-    @BindView(R.id.imageViewPausePlay)
-    ImageView imageViewPausePlay;
-    boolean isPlay = false;
-    @BindDrawable(R.drawable.ic_player_controll_pause_button)
-    Drawable pauseDrawable;
-    @BindDrawable(R.drawable.ic_player_controll_play_button)
-    Drawable playDrawable;
-    @BindDrawable(R.drawable.ic_player_poi_info_shape)
-    Drawable poiInfoShape;
-
-
+    //test panel
     @BindView(R.id.textTest)
     TextView textTest;
     @BindView(R.id.scrollTest)
     ScrollView scrollTest;
-    public boolean isDebug=false;
+    public boolean isDebug = false;
+
     public void setTest(String s) {
         textTest.setText("Max distance to stay" + (long) presenter.maxDistance + "\n");
         textTest.append(Html.fromHtml(s));
@@ -162,6 +175,8 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         presenter = new MapPresenter(getActivity(), PermissionUtils.createRequester(this,
                 REQUEST_LOCATION_PERMISSIONS));
         presenter.attach(this);
+        getActivity().startService(new Intent(getActivity(), AudioService.class)
+                .setAction(AudioService.Action.INIT));
     }
 
     @Override
@@ -171,7 +186,7 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         View rootView = inflater.inflate(R.layout.fragment_menu_player, container, false);
         unbinder = ButterKnife.bind(this, rootView);
         initViews();
-        if(isDebug) debugShow(isDebug);
+        if (isDebug) debugShow(isDebug);
         return rootView;
     }
 
@@ -294,21 +309,26 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         seekBarPlayer.setProgress(position + 1);
     }
 
+
     @OnClick(R.id.RefreshButton)
     public void refreshButtonClicked() {
         isOnButtonRefresh = !isOnButtonRefresh;
         buttonRefreshOn.setVisibility(booleanToVisible(isOnButtonRefresh));
 
         AlertDialog.Builder ad = new AlertDialog.Builder(getContext());
-        ad.setTitle("Title");  // заголовок
-        ad.setMessage("Message"); // сообщение
-        ad.setPositiveButton("ok", new DialogInterface.OnClickListener() {
+        ad.setMessage(getString(R.string.mp_warning_history_reset)); // сообщение
+        ad.setPositiveButton(getString(R.string.mp_dialog_button_ok), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-
+                presenter.clearHistory();
+            }
+        }).setNegativeButton(getString(R.string.mp_dialog_button_cancel), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.cancel();
             }
         });
-        //ad.show();
+        ad.show();
 
 
     }
@@ -323,22 +343,18 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     }
 
     private int booleanToVisible(boolean isVisible) {
-        return isVisible?View.VISIBLE:View.INVISIBLE;
+        return isVisible ? View.VISIBLE : View.INVISIBLE;
     }
 
 
-
-
-
-  // Category
-    public void categoryClick(boolean isCategoryPress,LinearLayout bgCategory,ImageView icCategory,TextView txtCategory,int color) {
-        if(isCategoryPress){
+    // Category
+    public void categoryClick(boolean isCategoryPress, LinearLayout bgCategory, ImageView icCategory, TextView txtCategory, int color) {
+        if (isCategoryPress) {
             bgCategory.setBackgroundColor(getResources().getColor(R.color.colorPlayerCategoryUnCheck));
             icCategory.setColorFilter(
                     Color.BLACK, PorterDuff.Mode.MULTIPLY);
             txtCategory.setTextColor(Color.BLACK);
-        }
-        else{
+        } else {
             bgCategory.setBackgroundColor(color);
             icCategory.setColorFilter(
                     Color.WHITE, PorterDuff.Mode.MULTIPLY);
@@ -347,51 +363,78 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
 
 
     }
+
     @OnClick(R.id.btnCategoryNature)
     public void categoryNatureClick() {
-        categoryClick(isCategoryNaturePress,bgCategoryNature,icCategoryNature,txtCategoryNature,getResources().getColor(R.color.colorPlayerCategoryNature));
-        isCategoryNaturePress=!isCategoryNaturePress;
+        categoryClick(isCategoryNaturePress, bgCategoryNature, icCategoryNature, txtCategoryNature, getResources().getColor(R.color.colorPlayerCategoryNature));
+        isCategoryNaturePress = !isCategoryNaturePress;
+
     }
+
     @OnClick(R.id.btnCategoryHistory)
     public void categoryHistoryClick() {
-        categoryClick(isCategoryHistoryPress,bgCategoryHistory,icCategoryHistory,txtCategoryHistory,getResources().getColor(R.color.colorPlayerCategoryHistory));
-        isCategoryHistoryPress=!isCategoryHistoryPress;
+        categoryClick(isCategoryHistoryPress, bgCategoryHistory, icCategoryHistory, txtCategoryHistory, getResources().getColor(R.color.colorPlayerCategoryHistory));
+        isCategoryHistoryPress = !isCategoryHistoryPress;
     }
+
     @OnClick(R.id.btnCategoryPeople)
     public void categoryPeopleClick() {
-        categoryClick(isCategoryPeoplePress,bgCategoryPeople,icCategoryPeople,txtCategoryPeople,getResources().getColor(R.color.colorPlayerCategoryPeople));
-        isCategoryPeoplePress=!isCategoryPeoplePress;
+        categoryClick(isCategoryPeoplePress, bgCategoryPeople, icCategoryPeople, txtCategoryPeople, getResources().getColor(R.color.colorPlayerCategoryPeople));
+        isCategoryPeoplePress = !isCategoryPeoplePress;
     }
+
     @OnClick(R.id.btnCategoryCulture)
     public void categoryCultureClick() {
-        categoryClick(isCategoryCulturePress,bgCategoryCulture,icCategoryCulture,txtCategoryCulture,getResources().getColor(R.color.colorPlayerCategoryCulture));
-        isCategoryCulturePress=!isCategoryCulturePress;
+        categoryClick(isCategoryCulturePress, bgCategoryCulture, icCategoryCulture, txtCategoryCulture, getResources().getColor(R.color.colorPlayerCategoryCulture));
+        isCategoryCulturePress = !isCategoryCulturePress;
     }
+
     @OnClick(R.id.btnCategoryALL)
     public void categoryALLClick() {
-        if(!isCategoryNaturePress) categoryNatureClick();
-        if(!isCategoryHistoryPress) categoryHistoryClick();
-        if(!isCategoryPeoplePress) categoryPeopleClick();
-        if(!isCategoryCulturePress) categoryCultureClick();
-        isCategoryNaturePress=true; isCategoryHistoryPress=true; isCategoryPeoplePress=true; isCategoryCulturePress=true;
+        if (!isCategoryNaturePress) categoryNatureClick();
+        if (!isCategoryHistoryPress) categoryHistoryClick();
+        if (!isCategoryPeoplePress) categoryPeopleClick();
+        if (!isCategoryCulturePress) categoryCultureClick();
+        isCategoryNaturePress = true;
+        isCategoryHistoryPress = true;
+        isCategoryPeoplePress = true;
+        isCategoryCulturePress = true;
     }
-
-
 
 
     //Player Control
     @OnClick(R.id.buttonPausePlay)
     public void playPauseClicked() {
         presenter.playOrPauseTrack();
+        String eventParameters = "{\"name\":\"PlayPause\", \"location\":\"player\"}";
+        YandexMetrica.reportEvent("Button press", eventParameters);
     }
-    @OnClick(R.id.buttonPrevTrack)
-    public void prevTrackClicked(){
-        presenter.playPrevTrack();
-    }
-    @OnClick(R.id.buttonNextTrack)
-    public void nextTrackClicked(){presenter.playNextTrack();}
 
-     @Override
+    @OnClick(R.id.buttonPrevTrack)
+    public void prevTrackClicked() {
+        presenter.playPrevTrack();
+        String eventParameters = "{\"name\":\"PrevTrack\", \"location\":\"player\"}";
+        YandexMetrica.reportEvent("Button press", eventParameters);
+    }
+
+    @OnClick(R.id.buttonNextTrack)
+    public void nextTrackClicked() {
+        presenter.playNextTrack();
+        String eventParameters = "{\"name\":\"NextTrack\", \"location\":\"player\"}";
+        YandexMetrica.reportEvent("Button press", eventParameters);
+    }
+
+    @OnClick(R.id.mpButtonPrevTrack)
+    public void prevPoiClicked() {
+        presenter.playPrevPoi();
+    }
+
+    @OnClick(R.id.mpButtonNextTrack)
+    public void nextPoiClicked() {
+        presenter.playNextPoi();
+    }
+
+    @Override
     public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
         if (isSeekBarTouch) presenter.playTrackToPosition(i);
     }
@@ -407,18 +450,15 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
     }
 
 
-
-
-
-    public void debugShow(boolean isDebag){
-       int isVisible=booleanToVisible(!isDebag);
-       layoutFriend.setVisibility(isVisible);
-       layoutCategory.setVisibility(isVisible);
-       layoutPoiInfo.setVisibility(isVisible);
-       layoutAWD.setVisibility(isVisible);
-       layoutPlayer.setVisibility(isVisible);
-       layoutPlayerAdv.setVisibility(isVisible);
-       scrollTest.setVisibility(isDebag?View.VISIBLE:View.GONE);
+    public void debugShow(boolean isDebag) {
+        int isVisible = booleanToVisible(!isDebag);
+        layoutFriend.setVisibility(isVisible);
+        layoutCategory.setVisibility(isVisible);
+        layoutPoiInfo.setVisibility(isVisible);
+        layoutAWD.setVisibility(isVisible);
+        layoutPlayer.setVisibility(isVisible);
+        layoutPlayerAdv.setVisibility(isVisible);
+        scrollTest.setVisibility(isDebag ? View.VISIBLE : View.GONE);
     }
 
 //    public void onPoiMinRadiusClicked() {
@@ -633,73 +673,20 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         startActivityForResult(fpIntent, REQUEST_STORY_PICKER);
     }
 
-    private void onClearStoryFile() {
-        // presenter.setStoryFileUri(null);
-        //storyFile.setText(R.string.empty_story_file);
+    public void nextTrackClickEnabled(boolean enable) {
+        buttonNextTrack.setEnabled(enable);
+        if (!enable)
+            icButtonNextTrack.setColorFilter(getResources().getColor(R.color.mp_player_disable_btn), PorterDuff.Mode.SRC_ATOP);
+        else
+            icButtonNextTrack.setColorFilter(getResources().getColor(R.color.mp_player_enable_btn), PorterDuff.Mode.SRC_ATOP);
+
     }
 
-
-//
-
-//
-//    public void updateUiOnStopTracking() {
-//        poiName.setText(R.string.label_location_stopped_searching);
-//        updateButtonBar(LocationNameState.STOPPED_SEARCHING);
-//    }
-//
-//    public void updateUiOnResetTracking() {
-//        poiName.setText(R.string.label_not_available);
-//        longitude.setText(R.string.label_not_available);
-//        latitude.setText(R.string.label_not_available);
-//        updateButtonBar(LocationNameState.NOT_AVAILABLE);
-//    }
-//
-
-//
-//    public void setCoordinates(double longitude, double latitude) {
-//        this.longitude.setText(String.valueOf(longitude));
-//        this.latitude.setText(String.valueOf(latitude));
-//    }
-//
-
-//
-//    public void clearAudioTrackInfo() {
-//        audioTrackName.setText("");
-//        audioTrackCount.setText("");
-//        audioTotalDuration.setText("");
-//        audioCurrentDuration.setText("");
-//    }
-//
-
-//    public void setLocationUpdateIntervalSec(int intervalSec) {
-//        locationUpdateInterval.setText(String.valueOf(intervalSec));
-//    }
-//
-//    public void setPoiMinRadius(int radiusInMeters) {
-//        poiMinRadius.setText(String.valueOf(radiusInMeters));
-//    }
-//
-//    public void setPoiMaxRadius(int radiusInMeters) {
-//        poiMaxRadius.setText(String.valueOf(radiusInMeters));
-//    }
-//
-//    private void updateButtonBar(@LocationNameState int state) {
-//        startButton.setEnabled(state != LocationNameState.SEARCHING);
-//        stopButton.setEnabled(state == LocationNameState.SEARCHING);
-//        resetButton.setEnabled(state == LocationNameState.STOPPED_SEARCHING);
-//    }
-//
-//    public void hidePlayerControls() {
-//        playerControls.setVisibility(View.GONE);
-//    }
-//
-//    public void showPlayControl() {
-//        playPauseAudioTrackButton.setImageDrawable(getResources().getDrawable(R.drawable.player_btn_play));
-//        playPauseAudioTrackButton.setClickable(true);
-//    }
-//
-//    public void showPauseControl() {
-//        playPauseAudioTrackButton.setImageDrawable(getResources().getDrawable(R.drawable.player_btn_pause));
-//        playPauseAudioTrackButton.setClickable(true);
-//    }
+    public void prevTrackClickEnabled(boolean enable) {
+        buttonPrevTrack.setEnabled(enable);
+        if (!enable)
+            icButtonPrevTrack.setColorFilter(getResources().getColor(R.color.mp_player_disable_btn), PorterDuff.Mode.SRC_ATOP);
+        else
+            icButtonPrevTrack.setColorFilter(getResources().getColor(R.color.mp_player_enable_btn), PorterDuff.Mode.SRC_ATOP);
+    }
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="map_init_state_init">Инициализация</string>
+    <string name="map_init_state_ftp_start">Загрузка Файла</string>
+    <string name="map_init_state_ftp_stop">Загрузка завершена</string>
+    <string name="map_init_state_zip_start">Распаковка пакета</string>
+    <string name="map_init_state_zip_stop">Распаковка пакета завершена</string>
+    <string name="map_init_state_json_start">Подготовка базы</string>
+    <string name="map_init_state_json_stop">База подготовленна</string>
+    <string name="map_init_state_bd_start">Запись в Базу Данных</string>
+    <string name="map_init_state_bd_stop">Запись завершена</string>
+
+
+</resources>

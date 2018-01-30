@@ -1,19 +1,17 @@
 package ru.mhistory;
 
-import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
-import android.os.Environment;
 import android.support.multidex.MultiDex;
-import android.widget.Toast;
 
-import ru.mhistory.common.util.FileUtil;
-import ru.mhistory.log.FileLogger;
+import com.yandex.metrica.YandexMetrica;
+
 import ru.mhistory.log.Logger;
 
 public class MobileHistoryApp extends Application {
 
     private static Context context;
+    private String API_key="06581a8f-8122-4510-98f1-2603e7ac0408";
 
     public static Context getContext() {
         return context;
@@ -30,7 +28,12 @@ public class MobileHistoryApp extends Application {
     public void onCreate() {
         super.onCreate();
         configureLogger();
-        Toast.makeText(context, FileLogger.patchLogDir, Toast.LENGTH_LONG).show();
+        YandexMetrica.activate(getApplicationContext(), API_key);
+        // Отслеживание активности пользователей
+        YandexMetrica.enableActivityAutoTracking(this);
+       // Toast.makeText(context, FileLogger.patchLogDir, Toast.LENGTH_LONG).show();
+
+        YandexMetrica.reportEvent("Srart Aplication");
     }
 
     private void configureLogger() {

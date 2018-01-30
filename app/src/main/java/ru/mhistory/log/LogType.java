@@ -5,6 +5,6 @@ package ru.mhistory.log;
  */
 
 public enum LogType {
-    Player,Realm,Load,File,Json,App,MapView,Location,PoiSearch,Event;
+    Player,Realm,Load,File,Json,App,MapView,Location,PoiSearch,Event, Tester;
 
 }

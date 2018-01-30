@@ -5,4 +5,8 @@
     <string name="mp_category_people">ЛЮДИ</string>
     <string name="mp_category_culture">КУЛЬТУРА</string>
     <string name="mp_category_all">ВЫБРАТЬ ВСЕ КАТЕГОРИИ</string>
+
+    <string name="mp_dialog_button_ok">"Ок"</string>
+    <string name="mp_dialog_button_cancel">"Отменить"</string>
+    <string name="mp_warning_history_reset">"Пользовательская история будет удалена"</string>
 </resources>

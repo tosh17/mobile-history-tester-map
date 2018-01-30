@@ -177,7 +177,7 @@ public class AndroidAudioPlayer implements
         checkState(State.PLAYING);
         Logger.d("On medial player completion %s", mediaPlayer);
         state = State.ENDED;
-        callbacks.onEnded();
+        callbacks.onEnded(false);
     }
 
     @Override

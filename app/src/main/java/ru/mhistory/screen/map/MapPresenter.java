@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.UiThread;
 import android.support.annotation.WorkerThread;
 import android.support.v4.util.Pair;
+import android.widget.Toast;
 
 import com.squareup.otto.Subscribe;
 
@@ -14,17 +15,21 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import api.vo.AngleAvgLatLng;
 import api.vo.Poi;
 import api.vo.PoiContent;
 import api.vo.PoiInfo;
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.AppPrepareBDCompliteEvent;
-import ru.mhistory.bus.event.AppPrepareTTSCompliteEvent;
+import ru.mhistory.bus.event.AppPrepareBDCompleteEvent;
+import ru.mhistory.bus.event.AppPrepareTTSCompleteEvent;
 import ru.mhistory.bus.event.CanPauseEvent;
 import ru.mhistory.bus.event.CanPlayEvent;
+import ru.mhistory.bus.event.InitStatus;
 import ru.mhistory.bus.event.LocationChange;
+import ru.mhistory.bus.event.MapButtonClick;
+import ru.mhistory.bus.event.MapButtonState;
 import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PlaybackStopEvent;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
@@ -67,11 +72,15 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 //    private static final String[] poiMaxRadiusValues = buildPoiRadiusValues(
 //            MIN_POI_MAX_RADIUS_M, MAX_POI_MAX_RADIUS_M, POI_MAX_RADIUS_STEP_M);
 
-    private Set<Long> processedIdContent = new HashSet<>();  //прослушаные треки
-    private Set<Poi> fullListPoi = new HashSet<>();
-    private Set<Poi> processedPois = new HashSet<>();          // прослушаные POI
-    private Poi currentPlayingPoi;
-    private Set<Poi> latestPois = new HashSet<>();
+    private Set<Poi> fullListPoi = new HashSet<>(); //полный лист
+    private Set<Poi> playingListPoi = new HashSet<>(); //лист точек которые хоть раз играли
+    private Set<Poi> listingListPoi = new HashSet<>(); //лист точек при переборе пои
+    private Pair<PoiInfo, Poi> lastListingPoi;
+    private Pair<PoiInfo, Poi> currentPlayingPoi;
+    private String lastListingPoiUrl = "";
+    private String currentPlayingPoiUrl = "";
+    private CopyOnWriteArraySet<Poi> listPoi = new CopyOnWriteArraySet<>();
+
     private final LocationTracker locationTracker;
     private LatLng currentLatLng;  // текущее положение
     private long lastTimeStamp = 0; // последняя временная метка
@@ -79,8 +88,10 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     private boolean isTracing = false; //поигрешность на скачки трекера
     private boolean isStay = true;      //стоим или движемся
     private boolean isPlayerBlock = false;      //плайер блокирован
+    private boolean isStateTracing = false;
     private AngleAvgLatLng avgangle;
     private long preambulaId; //
+
 
     private boolean startTrackingIsBdComplite = false;
     private boolean startTrackingIsTTSDone = false;
@@ -105,10 +116,13 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     public MapPresenter(@NonNull Context context, @NonNull PermissionUtils.Requester requester) {
         this.locationTracker = new GoogleApiLocationTracker(context, requester);
+        //  this.locationTracker = new DummyLocationTracker();
         locationTracker.setLocationUpdateCallbacks(this);
         conf = SearchConf.getSearchPoiConf(context);
+        setSearchingRadius(conf.radiusStay);
         locationTracker.setLocationUpdateIntervalMs(conf.searchTimeUpdate * 1000);
-        avgangle=new AngleAvgLatLng(conf.angleAvgCount);
+        avgangle = new AngleAvgLatLng(conf.angleAvgCount);
+
         conf.setChangeListener(new SearchConf.OnChangeSearchPoiConf() {
             @Override
             public void onChangeSearchPoiConf() {
@@ -117,16 +131,18 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                 else setSearchingRadius(conf.radiusZone3);
                 if (isStay && conf.isStayPlay) nextPoiFind(currentLatLng);
                 fragment.debugShow(conf.debug);
-                if(conf.angleAvgCount!=avgangle.size())avgangle=new AngleAvgLatLng(conf.angleAvgCount);
+                if (conf.angleAvgCount != avgangle.size())
+                    avgangle = new AngleAvgLatLng(conf.angleAvgCount);
             }
         });
 
+        locationTracker.startTracking();
     }
 
     @UiThread
     public void attach(@NonNull PlayerMenuFragment fragment) {
         this.fragment = fragment;
-        fragment.isDebug=conf.debug;
+        fragment.isDebug = conf.debug;
         BusProvider.getInstance().register(this);
 
     }
@@ -208,7 +224,9 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @Override
     public void onLocationChanged(@NonNull final LatLng latLng, long time) {
         ThreadUtil.runOnUiThread(() ->
-                BusProvider.getInstance().post(new LocationChange(latLng,conf.movementAngle)));
+                BusProvider.getInstance().post(new LocationChange(latLng, conf.movementAngle)));
+
+        if (fullListPoi != null) marker(latLng);
         if (!isTracing) {
             currentLatLng = latLng;
             setSearchingRadius(conf.radiusStay);
@@ -217,20 +235,26 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         Location.distanceBetween(currentLatLng.latitude, currentLatLng.longitude,
                 latLng.latitude, latLng.longitude,
                 result);
-
+        float speed = 1000 * result[0] / (time - lastTimeStamp);
+        if (speed > conf.angleAvgSpeed)
+            conf.movementAngle = avgangle.add(latLng);
+        currentLatLng = latLng;
+        lastTimeStamp = time;
+        if (!isStateTracing) return;
         if (isStay) {  //Вывод в шторку максимального перемещения для режима стоим
             maxDistance = Math.max(result[0], maxDistance);
             ThreadUtil.runOnUiThread(() -> fragment.setTest(tempStr));
         }
-        if (!isTracing) {//todo добавить загрузку нового квадрата
+        if (!isTracing) {//todo добавить загрузку нового квадрата  и разбить по квадратам
             android.util.Pair<LatLng, LatLng> square = PoiSearch.getSquare(latLng, conf.searchSquare);
             RealmFactory factory = RealmFactory.getInstance(fragment.getActivity().getApplicationContext());
             fullListPoi = factory.findSquare(square);
+            for (Poi p : fullListPoi) if (!p.isPoiComplete()) listPoi.add(p);
+
             Map<LatLng, Poi> cache = new HashMap<>();
             for (Poi p : fullListPoi) cache.put(new LatLng(p.latitude, p.longitude), p);
             ThreadUtil.runOnUiThread(() ->
                     BusProvider.getInstance().post(new PoiCacheAvailableEvent(cache)));
-            latestPois = fullListPoi;
             isTracing = true;
             notifyUiOnLocationChanged(latLng);
         }
@@ -244,37 +268,35 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             setSearchingRadius(conf.radiusZone3);
             Logger.d(LogType.Location, "Начало движения");
         }
-        float speed= 1000*result[0]/(time-lastTimeStamp);
-        if(speed>conf.angleAvgSpeed)
-        conf.movementAngle = avgangle.add(latLng);
+
         Logger.d(LogType.Location, "onLocationChanged " + "lat=" + latLng.latitude + ":lng" + latLng.longitude
                 + " distance" + result[0] + "; angle=" + result[1]);
 
-        currentLatLng = latLng;
-        lastTimeStamp=time;
+
         notifyUiOnLocationChanged(latLng);
         nextPoiFind(latLng);
+    }
+
+    private void marker(LatLng latLng) {
+        int radius = isStay ? conf.radiusStay : conf.radiusZone3;
+        float[] direction = new float[2];
+        for (Poi p : fullListPoi) {
+            if (currentPlayingPoi == null || p != currentPlayingPoi.second) {
+                Location.distanceBetween(latLng.latitude, latLng.longitude, p.latitude, p.longitude, direction);
+                if (direction[0] > radius) {
+                    if (p.status != 0) changePoiStatus(p, 0);
+                } else {
+                    changePoiStatus(p);
+                }
+            }
+        }
     }
 
     private void nextPoiFind(LatLng latLng) {
         if (isStay && !conf.isStayPlay) return;
         if (isPlayerBlock) return;
-        PoiSearchZoneResult pois = PoiSearch.findPoi(latLng, latestPois, conf);
-        //Маркеровка
-        for (Poi p : latestPois) {
-            if (pois.contains(p, isStay)) {
-                if (p.status == 0) {
-                   changePoiStatus(p,1);
-                }
-            } else {
-                if (p.status != 0) {
-                  changePoiStatus(p,0);
-                }
-            }
-        }
+        PoiSearchZoneResult pois = PoiSearch.findPoi(latLng, listPoi, conf);
         if (pois != null && !pois.isEmpty()) {
-            pois.removeAll(processedPois);
-
             ThreadUtil.runOnUiThread(() -> {
                 if (isStay) {
                     tempStr = pois.stayToString();
@@ -284,19 +306,29 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                     fragment.setTest(pois.moveToString(conf.movementAngle));
                 }
             });
-
-            //todo   подумать как чистить проигранные пои
-            //         latestPois = pois.getAllPoi();
             if (pois.isEmpty(isStay)) {
                 Logger.d("Points exists within current radius but all of them are processed");
             } else {
                 Pair<PoiInfo, Poi> resultPoi;
                 resultPoi = pois.getNearestPoi(isStay);
+
                 //noinspection ConstantConditions
                 notifyUiOnNearestNonVisitedPoiAvailable(resultPoi.second, resultPoi.first);
+                currentPlayingPoi = resultPoi;
             }
         }
+    }
 
+
+    private Pair<PoiInfo, Poi> nextPoiFind() {
+        PoiSearchZoneResult pois = PoiSearch.findPoi(currentLatLng, listPoi, conf);
+        Pair<PoiInfo, Poi> resultPoi;
+        resultPoi = pois.getNextNearestPoi(isStay, playingListPoi);
+        if (resultPoi == null) resultPoi = pois.getNextNearestPoi(isStay, listingListPoi);
+        if (resultPoi != null) {
+            listingListPoi.add(resultPoi.second);
+        }
+        return resultPoi;
     }
 
     private void notifyUiOnNearestNonVisitedPoiAvailable(@NonNull final Poi poi,
@@ -317,14 +349,14 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
 
     @Subscribe
-    public void bdCompliteEvent(@NonNull AppPrepareBDCompliteEvent event) {
+    public void bdCompleteEvent(@NonNull AppPrepareBDCompleteEvent event) {
         Logger.d(LogType.App, "MapPresenter Base Complete ok");
         startTrackingIsBdComplite = true;
         startTracking();
     }
 
     @Subscribe
-    public void ttsCompliteEvent(@NonNull AppPrepareTTSCompliteEvent event) {
+    public void ttsCompleteEvent(@NonNull AppPrepareTTSCompleteEvent event) {
         Logger.d(LogType.App, "MapPresenter TTS Complete ok");
         startTrackingIsTTSDone = true;
         startTracking();
@@ -335,7 +367,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
                                  @NonNull PoiInfo poiInfo) {
         Logger.d(String.format("New interest point is available (%s), distance to = %s, " +
                 "angle = %s", poi, poiInfo.distanceTo, poiInfo.angle));
-        fragment.setPoi(poi.full_name,poi.size(),poiInfo.distanceTo);
+        fragment.setPoi(poi.full_name, poi.size(), poiInfo.distanceTo);
         BusProvider.getInstance().post(new PoiFoundEvent(poi));
     }
 
@@ -350,7 +382,10 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     public void startTracking() {
         if (!startTrackingIsBdComplite || !startTrackingIsTTSDone) return;
         Logger.d("Start tracking locations...");
-        locationTracker.startTracking();
+        Logger.d(LogType.Tester, "Start");
+        isStateTracing = true;
+        InitStatus.send(InitStatus.Finish);
+        // locationTracker.startTracking();
         fragment.updateUiOnStartTracking();
         BusProvider.getInstance().post(new StartTrackingEvent());
     }
@@ -366,8 +401,8 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     @UiThread
     public void resetTracking() {
         Logger.d("Reset tracking");
-        processedIdContent.clear();
-        processedPois.clear();
+//        processedIdContent.clear();
+//        processedPois.clear();
         locationTracker.resetTracking();
         fragment.updateUiOnResetTracking();
         BusProvider.getInstance().post(new ResetTrackingEvent());
@@ -394,16 +429,76 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     @UiThread
     public void playNextTrack() {
+
+        currentPlayingPoi.second.setFlip(true);
+        String url = currentPlayingPoi.second.getNextFlipContent().getDefaultUrl();
+        checkPrev(currentPlayingPoi.second.isHasPrevFlipContent());
+        checkNext(currentPlayingPoi.second.isHasNextFlipContent());
         Context ctx = fragment.getActivity();
         ctx.startService(new Intent(ctx, AudioService.class)
-                .setAction(AudioService.Action.NEXT));
+                .setAction(AudioService.Action.NEXT).putExtra(AudioService.KEY_AUDIO_URL, url));
+
     }
+
+
     @UiThread
     public void playPrevTrack() {
+        currentPlayingPoi.second.setFlip(true);
+        String url = currentPlayingPoi.second.getPrevFlipContent().getDefaultUrl();
+        checkPrev(currentPlayingPoi.second.isHasPrevFlipContent());
+        checkNext(currentPlayingPoi.second.isHasNextFlipContent());
         Context ctx = fragment.getActivity();
         ctx.startService(new Intent(ctx, AudioService.class)
-                .setAction(AudioService.Action.NEXT));
+                .setAction(AudioService.Action.NEXT).putExtra(AudioService.KEY_AUDIO_URL, url));
     }
+
+    public void playNextPoi() {
+        Pair<PoiInfo, Poi> pois = nextPoiFind();
+        if (pois == null) {
+            Toast.makeText(fragment.getContext(), "В данной зоне нет точек", Toast.LENGTH_SHORT);
+            return;
+        }
+        if (currentPlayingPoi.second != null) changePoiStatus(currentPlayingPoi.second);
+        if (pois != null) {
+            lastListingPoiUrl = currentPlayingPoiUrl;
+            currentPlayingPoiUrl = pois.second.getNextContent().getDefaultUrl();
+            lastListingPoi = currentPlayingPoi;
+            currentPlayingPoi = pois;
+            checkPrev(currentPlayingPoi.second.isHasPrev());
+            checkNext(currentPlayingPoi.second.isHasNext());
+            ;
+            playingListPoi.add(currentPlayingPoi.second);
+            ThreadUtil.runOnUiThread(() -> updateUiWithPoi(pois.second, pois.first));
+            Context ctx = fragment.getActivity();
+            ctx.startService(new Intent(ctx, AudioService.class)
+                    .setAction(AudioService.Action.NEXT).putExtra(AudioService.KEY_AUDIO_URL, currentPlayingPoiUrl));
+        }
+    }
+
+    public void playPrevPoi() {
+        checkPrev(lastListingPoi.second.isHasNext());
+        checkNext(lastListingPoi.second.isHasPrev());
+        ThreadUtil.runOnUiThread(() -> updateUiWithPoi(lastListingPoi.second, lastListingPoi.first));
+        Context ctx = fragment.getActivity();
+        ctx.startService(new Intent(ctx, AudioService.class)
+                .setAction(AudioService.Action.NEXT).putExtra(AudioService.KEY_AUDIO_URL, lastListingPoiUrl));
+    }
+
+    @Subscribe
+    public void onMapButtonClick(@NonNull MapButtonClick event) {
+        switch (event.type) {
+            case MapButtonClick.buttonPausePlay:
+                playOrPauseTrack();
+                break;
+            case MapButtonClick.buttonNextTrack:
+                playNextTrack();
+                break;
+            case MapButtonClick.buttonNextPoi:
+                playNextPoi();
+                break;
+        }
+    }
+
     @UiThread
     public void stopPlay() {
         Context ctx = fragment.getActivity();
@@ -415,7 +510,9 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     public void onNextTrackInfoEvent(@NonNull NextTrackInfoEvent event) {
         Logger.d("Audio track info received: name = %s, duration = %s", event.trackName,
                 event.duration);
-        locationTracker.stopTracking();
+        Logger.d(LogType.Tester, "Stop");
+        isStateTracing = false;
+        //locationTracker.stopTracking();
         fragment.setNextAudioTrackInfo(event.trackName, event.trackSequence, event.totalTrackCount);
     }
 
@@ -428,6 +525,8 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     @Subscribe
     public void onCanPlayTrackEvent(@NonNull CanPlayEvent event) {
+        Logger.d(LogType.Tester, "Start");
+        isStateTracing = true;
         locationTracker.startTracking();
         fragment.showPlayControl();
     }
@@ -439,11 +538,20 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     @Subscribe
     public void onTrackPlaybackEndedEvent(@NonNull TrackPlaybackEndedEvent event) {
-        Logger.d("Audio track playback completed, name = %s", event.trackName);
+        Logger.d("Audio track playback completed, name = %b", event.startTracking);
         isPlayerBlock = false;
+        currentPlayingPoi.second.putContentToHistory(event.id, fragment.getContext());
+        if (currentPlayingPoi.second.isPoiComplete()) {
+            changePoiStatus(currentPlayingPoi.second);
+            listPoi.remove(currentPlayingPoi.second);
+        }
         //nextPoiFind(currentLatLng);
-        locationTracker.startTracking();
-        fragment.hidePlayerControls();
+        if (event.startTracking) {
+            Logger.d(LogType.Tester, "Start");
+            isStateTracing = true;
+            //    locationTracker.startTracking();
+        }
+
     }
 
     @Subscribe
@@ -453,38 +561,27 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     }
 
     private void startPlayingAudioUrlForAvailablePoiIfPossible(@NonNull Poi poi, @NonNull PoiInfo poiInfo) {
-        //todo переделать логику под wow
-        currentPlayingPoi=poi;
 
-        if (poi.size() == 0) {
-            Logger.d("There are no audio urls for poi (%s)", poi);
-            processedPois.add(poi);
-            changePoiStatus(poi,3);
+        if (lastListingPoi == currentPlayingPoi) lastListingPoi = currentPlayingPoi;
+        poi.setFlip(false);
+        listingListPoi.clear();
+        playingListPoi.add(poi);
+        if (poi.isPoiComplete()) {
+            Logger.d("There are no audio urls for poi or complite(%s)", poi);
+            changePoiStatus(poi, 3);
             return;
         }
         String audioUrlToPlay = null;
-        long idUrlToPlay=0;
+        long idUrlToPlay = 0;
         PoiContent.AudioType audioTypeToPlay = null;
-        while (poi.isHasNextContent()) {
-            String audioUrl = poi.getNextContent().getDefaultUrl();
-            Long idUrl = poi.getCurrentContent().id;
-            PoiContent.AudioType audioType = poi.getCurrentContent().getDefaultType();
-            if (!processedIdContent.contains(idUrl)) {
-                audioUrlToPlay = audioUrl;
-                audioTypeToPlay = audioType;
-                idUrlToPlay=idUrl;
-                //TODO: добовлять после того как трек проигран?
-                processedIdContent.add(idUrl);
-                break;
-            }
-        }
-        if (audioUrlToPlay == null) {
-            Logger.d("There are no available audio urls for poi (%s), all of them processed", poi);
-            processedPois.add(poi);
-            changePoiStatus(poi,3);
-            nextPoiFind(currentLatLng);
-            return;
-        }
+
+        audioUrlToPlay = poi.getNextContent().getDefaultUrl();
+        checkNext(poi.isHasNext());
+        checkPrev(poi.isHasPrev());
+        idUrlToPlay = poi.getCurrentContent().id;
+        audioTypeToPlay = poi.getCurrentContent().getDefaultType();
+        lastListingPoiUrl = currentPlayingPoiUrl;
+        currentPlayingPoiUrl = audioUrlToPlay;
         Context ctx = fragment.getActivity();
 
         boolean isPreabpula = false;
@@ -492,7 +589,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         if (!isStay && poi.objId != preambulaId) {
             preambulaId = poi.objId;
             isPreabpula = true;
-            preambula = Preambula.get(poiInfo.distanceTo, conf.movementAngle - poiInfo.angle,conf) + ", " + poi.name;
+            preambula = Preambula.get(poiInfo.distanceTo, conf.movementAngle - poiInfo.angle, conf) + ", " + poi.name;
         }
 
         isPlayerBlock = true;
@@ -516,8 +613,40 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         }
     }
 
+    private void checkNext(boolean isEnable) {
+        fragment.nextTrackClickEnabled(isEnable);
+        ThreadUtil.runOnUiThread(() -> BusProvider.getInstance().post(new MapButtonState(MapButtonState.BTN_NEXT_TRACK, isEnable)));
+
+    }
+
+    private void checkPrev(boolean isEnable) {
+        fragment.prevTrackClickEnabled(isEnable);
+    }
+
     private void changePoiStatus(Poi poi, int i) {
         poi.status = i;
         ThreadUtil.runOnUiThread(() -> BusProvider.getInstance().post(new PoiStatusChangeEvent(poi)));
+    }
+
+    private void changePoiStatus(Poi poi) {
+        changePoiStatus(poi, poi.poiActiveStatus());
+    }
+
+
+    public void clearHistory() {
+        playingListPoi.clear();
+        listingListPoi.clear();
+        listPoi.clear();
+        PoiSearchZoneResult pois = PoiSearch.findPoi(currentLatLng, listPoi, conf);
+        for (Poi p : fullListPoi) {
+            p.clearHistory();
+            listPoi.add(p);
+            if (pois.contains(p, isStay)) {
+                changePoiStatus(p);
+            } else {
+
+                changePoiStatus(p, 0);
+            }
+        }
     }
 }

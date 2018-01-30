@@ -92,6 +92,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     private int audioFocus;
     private File externalRootDir;
     private String currentAudioTrackUrl;
+    private long currentAudioContentId;
+    private boolean isCurrentFlip;
     private String AfterPreambule;
 
     @Nullable
@@ -169,15 +171,16 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 onStopAction();
                 break;
             case Action.ENDED:
-                onEnded();
+                onEnded(false);
                 break;
             case Action.NEXT:
-                String nextUrl = intent.getExtras().getString(KEY_AUDIO_URL);
-                onNextAction(nextUrl);
+                currentAudioTrackUrl = intent.getExtras().getString(KEY_AUDIO_URL);
+                onNextAction(currentAudioTrackUrl);
                 break;
             case Action.URL:
                 String url = intent.getExtras().getString(KEY_AUDIO_URL);
-               Logger.d(LogType.Player, "intent to mp3-> " + url);
+                currentAudioContentId = intent.getExtras().getLong(KEY_AUDIO_ID);
+                Logger.d(LogType.Player, "intent to mp3-> " + url);
                 if (!TextUtils.isEmpty(url)) {
                     ttsPlayer.block(true);
                     if (intent.getExtras().getBoolean(KEY_IS_PREAMBULA)) {
@@ -188,7 +191,8 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 break;
             case Action.TEXT:
                 String text = intent.getExtras().getString(KEY_AUDIO_URL);
-               Logger.d(LogType.Player, "intent to tts-> " + text);
+                currentAudioContentId = intent.getExtras().getLong(KEY_AUDIO_ID);
+                Logger.d(LogType.Player, "intent to tts-> " + text);
                 if (!TextUtils.isEmpty(text)) {
                     audioPlayer.block(true);
                     if (intent.getExtras().getBoolean(KEY_IS_PREAMBULA)) {
@@ -205,17 +209,19 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     private void onTrackPreambula(String string) {
         ((AndroidTTSPlayer) ttsPlayer).toPlayPreambula(string);
     }
+
     @Override
     public void preambulaEnded() {
         onAudioTrackUrlAvailable(AfterPreambule);
     }
+
     @NonNull
     private NotificationManager getNotificationManager() {
         return (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
     }
 
     private void onPlayOrPauseAction() {
-       Logger.d(LogType.Player, "nPlayOrPauseAction -> " + getNotBlockPlayer().getClass().toString());
+        Logger.d(LogType.Player, "nPlayOrPauseAction -> " + getNotBlockPlayer().getClass().toString());
         if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING) {
             onPauseAction();
         } else {
@@ -224,7 +230,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onPlayAction() {
-        Logger.d(LogType.Player,"Play action received, player state (%s)", audioPlayer.getPlaybackState());
+        Logger.d(LogType.Player, "Play action received, player state (%s)", audioPlayer.getPlaybackState());
         if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PREPARING) {
 //            startPlayingAfterRetrieve = true;
             return;
@@ -237,7 +243,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onPauseAction() {
-        Logger.d(LogType.Player,"Pause action received, player state (%s)", getNotBlockPlayer().getPlaybackState());
+        Logger.d(LogType.Player, "Pause action received, player state (%s)", getNotBlockPlayer().getPlaybackState());
         if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PREPARING) {
             // If we are still retrieving media, clear the flag that indicates we should start
             // playing when we're ready
@@ -260,7 +266,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void onStopAction() {
-        Logger.d(LogType.Player,"Stop action received...");
+        Logger.d(LogType.Player, "Stop action received...");
         sendPlaybackStopEvent();
         releaseResources(true);
         giveUpAudioFocus();
@@ -421,7 +427,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     @Override
     public void onReady() {
 
-        Logger.d(LogType.Player,"Playback is ready for (%s)", currentAudioTrackUrl);
+        Logger.d(LogType.Player, "Playback is ready for (%s)", currentAudioTrackUrl);
         updateNotification("playing...");
         startAudioTrackProgress();
         sendNextTrackInfoEvent();
@@ -430,10 +436,10 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     @Override
-    public void onEnded() {
-       Logger.d(LogType.Player, "Playback is ended for " + currentAudioTrackUrl);
-        releaseResources(true);
-        sendTrackPlaybackEndedEvent();
+    public void onEnded(boolean isFlip) {
+        Logger.d(LogType.Player, "Playback is ended for " + currentAudioTrackUrl);
+        if(!isFlip) releaseResources(true);
+        sendTrackPlaybackEndedEvent(isFlip);
 
 
     }
@@ -457,7 +463,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     private void sendNextTrackInfoEvent() {
         ThreadUtil.runOnUiThread(() -> {
             BusProvider.getInstance().post(new NextTrackInfoEvent(currentAudioTrackUrl,
-                    audioPlayer.getDuration(), 1, 1));
+                    getNotBlockPlayer().getDuration(), 1, 1));
         });
 
     }
@@ -466,9 +472,9 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
         BusProvider.getInstance().post(new TrackProgressEvent(currentDuration, totalDuration));
     }
 
-    private void sendTrackPlaybackEndedEvent() { //Конец трека
+    private void sendTrackPlaybackEndedEvent(boolean isFlip) { //Конец трека
         ThreadUtil.runOnUiThread(() -> {
-            BusProvider.getInstance().post(new TrackPlaybackEndedEvent(currentAudioTrackUrl));
+            BusProvider.getInstance().post(new TrackPlaybackEndedEvent(currentAudioTrackUrl,currentAudioContentId,!isFlip));
         });
 
     }

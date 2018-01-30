@@ -8,6 +8,8 @@ import java.util.Set;
 import api.vo.Poi;
 import api.vo.PoiInfo;
 import ru.mhistory.geo.LatLng;
+import ru.mhistory.log.LogType;
+import ru.mhistory.log.Logger;
 import ru.mhistory.provider.PoiSearchResult;
 
 /**
@@ -69,8 +71,6 @@ public class PoiSearch {
             if (poiInfo.distanceTo <= minRadius) poiResult.withinMinRadius.put(poiInfo, poi);
             if (poiInfo.distanceTo > minRadius && poiInfo.distanceTo <= maxRadius)
                 poiResult.betweenMinAndMaxRadius.put(poiInfo, poi);
-            //Todo разобраться нах это нужно
-            //  if (poiInfo.distanceTo > maxRadius) poiResult.outOfMaxRadius.put(poiInfo, poi);
         }
         return poiResult;
     }
@@ -80,9 +80,11 @@ public class PoiSearch {
         for (Poi poi : pois) {
             PoiInfo poiInfo = getPoiInfo(current.latitude, current.longitude, poi.latitude, poi.longitude);
             float poiFromMoveAngle = conf.movementAngle - poiInfo.angle;
-           //Todo после выбора алгоритма оптимизмровать поиск
+            if(poi.objId==29) Logger.d(LogType.Tester,"  dist"+poiInfo.distanceTo+"  angle"+poiFromMoveAngle+"  "+current.latitude+" "+ current.longitude+" "+ poi.latitude+" "+ poi.longitude);
+            //Todo после выбора алгоритма оптимизмровать поиск
             if (poiInfo.distanceTo <= conf.radiusStay) {
-                poiResult.stay.put(poiInfo, poi);}
+                poiResult.stay.put(poiInfo, poi);
+            }
             if (poiInfo.distanceTo <= conf.radiusZone3) {
                 if (poiInfo.distanceTo <= conf.radiusZone1) poiResult.zone1.put(poiInfo, poi);
                 else if (poiInfo.distanceTo <= conf.radiusZone2
@@ -94,6 +96,8 @@ public class PoiSearch {
                 else poiResult.zone0.put(poiInfo, poi);
             }
         }
+
+
         return poiResult;
     }
 

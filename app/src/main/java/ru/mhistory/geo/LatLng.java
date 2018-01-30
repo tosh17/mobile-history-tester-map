@@ -12,6 +12,8 @@ public class LatLng {
         this.longitude = gogleLatLng.longitude;
         this.latitude = gogleLatLng.latitude;
     }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

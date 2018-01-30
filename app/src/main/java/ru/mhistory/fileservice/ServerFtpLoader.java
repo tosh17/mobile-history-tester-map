@@ -1,4 +1,4 @@
-package ru.mhistory.providers;
+package ru.mhistory.fileservice;
 
 import android.os.AsyncTask;
 
@@ -24,8 +24,14 @@ public class ServerFtpLoader extends ServerLoaderProvider {
     private static int PORT = 21;
     private static String User = "mhapp";
     private static String Pass = "okEKyNpA";
-    private static String FILE_NAME = "34pois.zip";
-@Override
+    String FILE_NAME = "34pois.zip";
+
+    public ServerFtpLoader(String name) {
+        super();
+        FILE_NAME=name+".zip";
+    }
+
+    @Override
     public void load(final File file, onServerLoadFinish isFinish) {
 
         AsyncTask<onServerLoadFinish, Void, Boolean> ex = new AsyncTask<onServerLoadFinish, Void, Boolean>() {

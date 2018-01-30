@@ -36,7 +36,7 @@ public interface AudioPlayer {
 
         void onPaused();
 
-        void onEnded();
+        void onEnded(boolean isFlip);
 
         boolean onError();
 

@@ -41,7 +41,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
     private Marker myLocationMarker;
     private boolean myLocationEnabled = false;
     private Circle searchingRadiusCircle;
-    private LatLng myLocation;
+    public LatLng myLocation;
     private boolean showSearchingRadius = false;
     private int searchingRadiusMeters;
     private Poi currentPoi;
@@ -149,7 +149,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
                 = new com.google.android.gms.maps.model.LatLng(location.latitude,
                 location.longitude);
         if (myLocationMarker == null) {
-            // Маркер мая локация
+            // Marker my Loaction
             Bitmap bitmap = UiUtil.drawableToBitmap(getContext(), R.drawable.ic_location_arrow_icon);
             myLocationMarker = googleMap.addMarker(new MarkerOptions()
                     .position(latLng)
@@ -380,7 +380,7 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
     public void onPoiReleased() {
         //todo status poi
         if (currentPoiMarker != null) {
-            setPoiMarkerIcon(currentPoiMarker, currentPoi.status);
+            setPoiMarkerIcon(currentPoiMarker, 2);
             Logger.d(LogType.MapView,currentPoi.name+" released to state "+currentPoi.status);
             currentPoiMarker.hideInfoWindow();
             currentPoiMarker = null;
@@ -406,8 +406,10 @@ public class MhMapView extends FrameLayout implements GoogleMap.OnMarkerClickLis
         if (currentPoiMarker != null) {
             ru.mhistory.geo.LatLng latLng = new ru.mhistory.geo.LatLng(currentPoi.latitude,
                     currentPoi.longitude);
+            //todo remove audioIndexCache
             int audioIndex = getAudioIndexCache(latLng);
             audioIndex++;
+            audioIndex=currentPoi.getCurrentPosition();
             currentPoiMarker.setTitle(String.format(Locale.getDefault(), "%s; %d/%d",
                     currentPoi.name, audioIndex, currentPoi.size()));
             audioIndexCache.put(latLng, audioIndex);

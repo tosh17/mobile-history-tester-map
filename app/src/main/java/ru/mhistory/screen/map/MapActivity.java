@@ -7,8 +7,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -18,7 +19,10 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.util.Pair;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.dmstocking.optional.java.util.Optional;
@@ -40,10 +44,9 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.gson.Gson;
 import com.squareup.otto.Subscribe;
+import com.yandex.metrica.YandexMetrica;
 
-import java.io.File;
-import java.io.IOException;
-
+import butterknife.BindDrawable;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
@@ -51,8 +54,13 @@ import ru.mhistory.BuildConfig;
 import ru.mhistory.Prefs;
 import ru.mhistory.R;
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.AppPrepareBDCompliteEvent;
+import ru.mhistory.bus.event.AppPrepareBDCompleteEvent;
+import ru.mhistory.bus.event.CanPauseEvent;
+import ru.mhistory.bus.event.CanPlayEvent;
+import ru.mhistory.bus.event.InitStatus;
 import ru.mhistory.bus.event.LocationChange;
+import ru.mhistory.bus.event.MapButtonClick;
+import ru.mhistory.bus.event.MapButtonState;
 import ru.mhistory.bus.event.NextTrackInfoEvent;
 import ru.mhistory.bus.event.PoiCacheAvailableEvent;
 import ru.mhistory.bus.event.PoiFoundEvent;
@@ -65,20 +73,16 @@ import ru.mhistory.bus.event.StartTrackingEvent;
 import ru.mhistory.bus.event.StopTrackingEvent;
 import ru.mhistory.bus.event.TrackPlaybackEndedEvent;
 import ru.mhistory.common.util.AppLaunchChecker;
-import ru.mhistory.common.util.FileUtil;
 import ru.mhistory.common.util.PermissionUtils;
+import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.common.util.UiUtil;
+import ru.mhistory.fileservice.FileService;
 import ru.mhistory.geo.LocationAccuracy;
 import ru.mhistory.geo.LocationRequestDefaults;
 import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
-import ru.mhistory.playback.AudioService;
 import ru.mhistory.provider.PoiProviderConfig;
-import ru.mhistory.providers.JsonToReal;
 import ru.mhistory.providers.PoiSearch;
-import ru.mhistory.providers.ServerFtpLoader;
-import ru.mhistory.providers.ServerLoaderProvider;
-import ru.mhistory.realm.RealmFactory;
 import ru.mhistory.screen.DrawerActivity;
 import ru.mhistory.screen.map.ui.MhMapView;
 
@@ -99,6 +103,27 @@ public class MapActivity
 
     @BindView(R.id.ic_commpass)
     ImageView icCompass;
+
+    @BindView(R.id.mapImageViewPausePlay)
+    ImageView imageViewPausePlay;
+    boolean isPlay = false;
+    @BindDrawable(R.drawable.ic_player_controll_pause_button)
+    Drawable pauseDrawable;
+    @BindDrawable(R.drawable.ic_player_controll_play_button)
+    Drawable playDrawable;
+
+    @BindView(R.id.mapIcButtonNextTrack)
+    ImageView icButtonNextTrack;
+    @BindView(R.id.mapButtonNextTrack)
+    View buttonNextTrack;
+
+    @BindView(R.id.mapInfoCard)
+    View mapInfoCard;
+    @BindView(R.id.mapTextInfo)
+    TextView mapTextInfo;
+    @BindView(R.id.mapInfoProgress)
+    ProgressBar mapInfoProgress;
+
     private Prefs prefs;
     private GoogleMap googleMap;
     private GoogleApiClient googleApiClient;
@@ -147,9 +172,7 @@ public class MapActivity
     private void toInitService() {
         //  FileUtil.verifyStoragePermissions(this);
         Logger.start();
-        startService(new Intent(this, AudioService.class)
-                .setAction(AudioService.Action.INIT));
-        RealmFactory.getInstance(getApplicationContext());
+
     }
 
     @Override
@@ -322,46 +345,18 @@ public class MapActivity
         switch (appLaunch) {
             case AppLaunchChecker.FIRST_TIME:
                 //Todo Сделать диалог с переходом на страницу занрузки
-                loadBD();
+                Intent intent=new Intent(this,FileService.class).setAction(FileService.Action.LOAD_ALL_BD);
+                startService(intent);
             case AppLaunchChecker.FIRST_TIME_VERSION:
                 prefs.putInt(Prefs.KEY_LAST_SEEN_VERSION, BuildConfig.VERSION_CODE);
                 break;
             case AppLaunchChecker.REGULAR:
                 //TODO: check update
-                BusProvider.getInstance().post(new AppPrepareBDCompliteEvent());
+                BusProvider.getInstance().post(new AppPrepareBDCompleteEvent());
                 break;
         }
         return appLaunch == AppLaunchChecker.FIRST_TIME;
     }
-
-    private void loadBD() {
-        //todo заменить имена файлов
-        String tempName = "cache/temp.zip";
-        String jsonName = "34pois.json";
-        File cachDir = new File(getApplicationContext().getFilesDir() + "/cache");
-        if (!cachDir.exists()) {
-            Log.d("MAKE DIR", cachDir.mkdir() + "");
-        }
-        FileUtil.listDir(getApplicationContext().getFilesDir().getAbsolutePath());
-
-        ServerLoaderProvider serverLoader = new ServerFtpLoader();
-        File file = new File(getApplicationContext().getFilesDir() + "/" + tempName);
-        serverLoader.load(file, new ServerLoaderProvider.onServerLoadFinish() {
-            @Override
-            public void loadFinished(boolean statusLoad) {
-                try {
-                    serverLoader.unzip(getApplicationContext().getFilesDir().toString() + "/", tempName);
-                    Uri uri = Uri.fromFile(new File(getApplicationContext().getFilesDir() + "/" + jsonName));
-                    RealmFactory.getInstance(getApplicationContext());
-                    new JsonToReal(uri).doIt();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-    }
-
 
     private Optional<Location> getLastKnownLocation() {
         try {
@@ -468,7 +463,7 @@ public class MapActivity
                     .target(latLng)      // Sets the center of the map to Mountain View
                     .zoom(currentZoom)                   // Sets the zoom
                     .bearing(bearing)                // Sets the orientation of the camera to east
-                  //  .tilt(30)                   // Sets the tilt of the camera to 30 degrees
+                    //  .tilt(30)                   // Sets the tilt of the camera to 30 degrees
                     .build();                   // Creates a CameraPosition from the builder
             googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         });
@@ -486,16 +481,24 @@ public class MapActivity
 //            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(SQUARE, 20));
 //        });
 
-        lastLatLng.ifPresent(latLng -> {
+//        lastLatLng.ifPresent(latLng -> {
+//
+//            Pair<ru.mhistory.geo.LatLng, ru.mhistory.geo.LatLng>
+//                    square = PoiSearch.getSquare(
+//                    new ru.mhistory.geo.LatLng(lastLatLng.get()), meters);
+//            LatLngBounds SQUARE = new LatLngBounds(
+//                    square.first.toGoogle(), square.second.toGoogle());
+//            // Creates a CameraPosition from the builder
+//            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(SQUARE,0));
+//        });
 
             Pair<ru.mhistory.geo.LatLng, ru.mhistory.geo.LatLng>
-                    square = PoiSearch.getSquare(
-                    new ru.mhistory.geo.LatLng(lastLatLng.get()), meters);
+                    square = PoiSearch.getSquare(mapView.myLocation, meters);
             LatLngBounds SQUARE = new LatLngBounds(
                     square.first.toGoogle(), square.second.toGoogle());
-                          // Creates a CameraPosition from the builder
+            // Creates a CameraPosition from the builder
             googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(SQUARE,0));
-        });
+
     }
 
     private void cameraToLatLng(@NonNull LatLng latLng) {
@@ -518,9 +521,9 @@ public class MapActivity
     @Override
     public void onLocationChanged(@NonNull Location location) {
         Logger.d(LogType.Location, "Map   " + location.toString());
-        updateMyLocation(location);
+       // updateMyLocation(location);
         // mapView.setMyLocation(location);
-        cameraToLatLng(new LatLng(location.getLatitude(), location.getLongitude()));
+     //   cameraToLatLng(new LatLng(location.getLatitude(), location.getLongitude()));
     }
 
     private void updateMyLocation(@NonNull Location location) {
@@ -623,9 +626,57 @@ public class MapActivity
         });
     }
 
+    @OnClick(R.id.mapButtonPausePlay)
+    public void onbtnPausePlay() {
+        BusProvider.getInstance().post(new MapButtonClick(MapButtonClick.buttonPausePlay));
+        String eventParameters = "{\"name\":\"PlayPause\", \"location\":\"map\"}";
+        YandexMetrica.reportEvent("Button press", eventParameters);
+    }
+    @OnClick(R.id.mapButtonNextTrack)
+    public void onBtnNextTrack() {
+        BusProvider.getInstance().post(new MapButtonClick(MapButtonClick.buttonNextTrack));
+    }
+    private void setButtonNextTrackEnable(boolean enable) {
+        buttonNextTrack.setEnabled(enable);
+        if (!enable)
+            icButtonNextTrack.setColorFilter(getResources().getColor(R.color.mp_player_disable_btn), PorterDuff.Mode.SRC_ATOP);
+        else
+            icButtonNextTrack.setColorFilter(getResources().getColor(R.color.mp_player_enable_btn), PorterDuff.Mode.SRC_ATOP);
+    }
+    @OnClick(R.id.mapButtonNextPoi)
+    public void onBtnNextPoi() {
+        BusProvider.getInstance().post(new MapButtonClick(MapButtonClick.buttonNextPoi));
+    }
+    @Subscribe
+    public void setButtonState(@NonNull MapButtonState event) {
+        setButtonNextTrackEnable(event.stare);
+    }
+
+    @Subscribe
+    public void infoStatus(@NonNull InitStatus event) {
+        if(event.isInit){
+            mapInfoCard.setVisibility(View.GONE);
+            return;
+        }
+        mapTextInfo.setText(getString(event.resId));
+        mapInfoProgress.setProgress(event.progress);
+    }
+
+    @Subscribe
+    public void onCanPlayTrackEvent(@NonNull CanPlayEvent event) {
+        ThreadUtil.runOnUiThread(() ->imageViewPausePlay.setImageDrawable(playDrawable));
+    }
+
+    @Subscribe
+    public void onCanPauseTrackEvent(@NonNull CanPauseEvent event){
+        ThreadUtil.runOnUiThread(() ->imageViewPausePlay.setImageDrawable(pauseDrawable));
+    }
+
     @Subscribe
     public void onLocationChangeEvent(@NonNull LocationChange event) {
-
+//        float currentZoom = googleMap.getCameraPosition().zoom;
+//        googleMap.animateCamera(
+//                CameraUpdateFactory.newLatLngZoom(event.location, currentZoom), 250, null));
         currentBearing=event.angle;
         if(!isCompass){ mapView.setMyLocation(event.location, 0); cameraToBearing(event.angle);}
         else mapView.setMyLocation(event.location, event.angle);
@@ -690,6 +741,7 @@ public class MapActivity
     public void onSetPoiRadiusEvent(@NonNull SetMaxPoiRadiusEvent event) {
         Logger.d(String.format("Set poi radius event received, radius = (%s)", event.radiusMeters));
         mapView.setSearchingRadius(event.radiusMeters);
+        cameraToCenterMeters(event.radiusMeters);
         // googleMap.animateCamera(CameraUpdateFactory.zoomTo(getZoomLevel(event.radiusMeters*4/3)), 2000, null);
         // googleMap.animateCamera(CameraUpdateFactory.zoomTo(16), 2000, null);
     }
@@ -703,7 +755,7 @@ public class MapActivity
         if(toast==null){ toast=new Toast(this).makeText(this,str,Toast.LENGTH_SHORT);}
         else toast.setText(str);
         toast.show();
-       }
+    }
     public static class PlayServicesErrorDialogFragment extends DialogFragment {
         private static final String ARG_PLAY_SERVICES_ERROR = "playServicesError";
 

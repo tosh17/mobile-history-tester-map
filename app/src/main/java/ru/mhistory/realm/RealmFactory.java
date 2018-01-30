@@ -51,7 +51,7 @@ public class RealmFactory {
         realm.executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
-                RealmResults<PoiRealm> results = realm.where(PoiRealm.class).findAll();
+                RealmResults<PoiHistory> results = realm.where(PoiHistory.class).findAll();
                 results.deleteAllFromRealm();
             }
         });
@@ -104,17 +104,30 @@ public class RealmFactory {
 
         Realm realm1 = Realm.getInstance(configContent);
         RealmResults<PoiContentRealm> contents; //todo  при привышении памяти или тормазах, можноискать забивать меньший квадрат
-
+        Realm realm2 = Realm.getInstance(configHistory);
+        RealmResults<PoiHistory> contentsHistory;
         for (PoiRealm p : points) {
             Poi poi = p.toPoi();
             pois.add(poi);
             contents = realm1.where(PoiContentRealm.class).equalTo("idPoi", poi.objId)
                     .findAll();
             for (PoiContentRealm c : contents) poi.addContent(c.toPoiContent());
+            contentsHistory=realm2.where(PoiHistory.class).equalTo("idPoi", poi.objId).findAll();
+            for (PoiHistory c : contentsHistory) poi.putContentToHistory(c.idContent);
             }
+
         realm.close();
         realm1.close();
 
         return pois;
+    }
+
+    public void saveHistory(long idPoi, long idContent){
+        Realm realm = Realm.getInstance(configHistory);
+        realm.beginTransaction();
+        realm.copyToRealm(new PoiHistory().config(idPoi,idContent));
+        realm.commitTransaction();
+        Logger.d(LogType.Realm,"History save");
+        realm.close();
     }
 }

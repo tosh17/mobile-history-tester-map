@@ -1,6 +1,7 @@
 package ru.mhistory.providers;
 
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.JsonReader;
 import android.util.Log;
@@ -23,7 +24,9 @@ import api.vo.PoiContent;
 import io.realm.RealmList;
 import ru.mhistory.MobileHistoryApp;
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.AppPrepareBDCompliteEvent;
+import ru.mhistory.bus.event.AppPrepareBDCompleteEvent;
+import ru.mhistory.bus.event.InitStatus;
+import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 import ru.mhistory.realm.PoiContentRealm;
@@ -41,34 +44,44 @@ public class JsonToReal {
         this.uri = uri;
     }
 
-    public boolean doIt() {
-        long startTime = System.currentTimeMillis();
-        Logger.d(LogType.Json, "Starting to parse the story file, start time is (%s, ms)", startTime);
-        JsonReader jr = null;
-        try {
-            jr = new JsonReader(getFileInputStreamReader());
-            readFromJson(jr);
-            return true;
-        } catch (UnsupportedEncodingException e) {
-            Log.e("PoiProvider", "Exception while parsing story json", e);
-            return false;
-        } catch (IOException e) {
-            Log.e("PoiProvider", "Exception while parsing story json", e);
-            return false;
-        } finally {
-            if (jr != null) {
+    public void doIt() {
+        AsyncTask<Void, Void, Boolean> ex = new AsyncTask<Void, Void, Boolean>(){
+
+            @Override
+            protected Boolean doInBackground(Void... voids) {
+                long startTime = System.currentTimeMillis();
+                Logger.d(LogType.Json, "Starting to parse the story file, start time is (%s, ms)", startTime);
+                JsonReader jr = null;
                 try {
-                    jr.close();
-                } catch (IOException ignored) {
+                    jr = new JsonReader(getFileInputStreamReader());
+                    readFromJson(jr);
+                    return true;
+                } catch (UnsupportedEncodingException e) {
+                    Log.e("PoiProvider", "Exception while parsing story json", e);
+                    return false;
+                } catch (IOException e) {
+                    Log.e("PoiProvider", "Exception while parsing story json", e);
+                    return false;
+                } finally {
+                    if (jr != null) {
+                        try {
+                            jr.close();
+                        } catch (IOException ignored) {
+                        }
+                    }
+                    long finishTime = System.currentTimeMillis();
+                    Logger.d(LogType.Json, "Finished to parse story file, finish time (%s, ms), time diff (%s, ms)",
+                            finishTime, finishTime - startTime);
                 }
             }
-            long finishTime = System.currentTimeMillis();
-            Logger.d(LogType.Json, "Finished to parse story file, finish time (%s, ms), time diff (%s, ms)",
-                    finishTime, finishTime - startTime);
-        }
+        };
+
+      ex.execute()  ;
+
     }
 
     protected void readFromJson(@NonNull JsonReader jr) throws IOException {
+        long count=0;
         RealmList<PoiRealm> poi = new RealmList<>();
         List<PoiContentRealm> content = new LinkedList<>();
         Logger.d(LogType.Json, "start parse json realm");
@@ -188,7 +201,8 @@ public class JsonToReal {
                                 }
                             }
                             jr.endObject(); //content finish
-                            Logger.d(LogType.Json, "Load id=%s contentName %s", contentId, contentName);
+
+                            Logger.d(LogType.Json, "%d  Load id=%s contentName %s",count, contentId, contentName);
                             content.add(new PoiContentRealm().fromPoiContent(obj_id, new PoiContent(contentId, contentName, contentType, wow, text, contentAudio)));
                         }
                         jr.endArray();//content array finish
@@ -196,20 +210,25 @@ public class JsonToReal {
                 }
             }
             jr.endObject();  //point finish
+            count++;
+            InitStatus.send(InitStatus.JsonStart, (int) (100*count/2500));
             poi.add(new PoiRealm().fromPoi(new Poi(obj_id, name, type, full_name, full_address, lon, lat)));
 
         }
         jr.endArray(); //point array finish
         jr.endObject();
         Logger.d(LogType.Json, "finish parse json");
+        InitStatus.send(InitStatus.JsonStop);
         toRealm(poi, content);
     }
 
     private void toRealm(RealmList<PoiRealm> poi, List<PoiContentRealm> content) {
         RealmFactory factory = RealmFactory.getInstance();
+        InitStatus.send(InitStatus.BdStart);
         factory.savePoi(poi);
         factory.SaveContent(content);
-        BusProvider.getInstance().post(new AppPrepareBDCompliteEvent());
+        InitStatus.send(InitStatus.BdStop);
+        ThreadUtil.runOnUiThread(() -> BusProvider.getInstance().post(new AppPrepareBDCompleteEvent()));
 
     }
 

@@ -1,9 +1,11 @@
 package ru.mhistory.playback;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -13,7 +15,7 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.AppPrepareTTSCompliteEvent;
+import ru.mhistory.bus.event.AppPrepareTTSCompleteEvent;
 import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
@@ -34,6 +36,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     private boolean initStatus = false;
     String strTTS = "";
     String strToPlay = "";
+    boolean isFlip=false;
     HashMap<String, String> map = new HashMap<String, String>();
     HashMap<String, String> mapP = new HashMap<String, String>();
     private final String typePlayTrack = "Track";
@@ -42,6 +45,8 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
 
     private float LetterPerSecond = 12.8f; //количество знаков в секунду
+    private int minDuration = 10;
+    private int currentSleep=1000;
 
     private long timeStartPlay;
     private int progress;
@@ -52,6 +57,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
         textToSpeech = new TextToSpeech(context, this, "com.google.android.tts");
         this.callbacks = callbacks;
         map.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, typePlayTrack);
+        //map.put(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS, "true");
         mapP.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, typePlayPreambula);
         textToSpeech.setOnUtteranceProgressListener(this);
         Logger.d(LogType.Player, textToSpeech.getDefaultEngine());
@@ -117,12 +123,15 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
     @Override
     public void flip(String nextTrack) {
+        isFlip=true;
+        strTTS=nextTrack;
         textToSpeech.stop();
+        state = State.READY;
+        callbacks.onReady();
     }
 
     @Override
     public void toPosition(int position) {
-        // TODO: сделать перемещение (stop), обрезать текст, отправить в tts
         state = State.PAUSED;
         int start = position * strTTS.length() / 100;
         int end = strTTS.length();
@@ -179,6 +188,13 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
 
             Locale locale = new Locale("ru");
             int result = textToSpeech.setLanguage(locale);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                ttsGreater21(locale);
+            } else {
+                ttsUnder20();
+            }
+
+            textToSpeech.setSpeechRate(0.7f);
 
             if (result == TextToSpeech.LANG_MISSING_DATA
                     || result == TextToSpeech.LANG_NOT_SUPPORTED) {
@@ -190,19 +206,42 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
             Log.e("TTS", "Ошибка!");
         }
         ThreadUtil.runOnUiThread(() -> {
-            BusProvider.getInstance().post(new AppPrepareTTSCompliteEvent(initStatus));
+            BusProvider.getInstance().post(new AppPrepareTTSCompleteEvent(initStatus));
         });
+    }
+
+    private void ttsUnder20() {
+    }
+
+
+    private void ttsGreater21(Locale locale) {
+        String[] ruVoice={"ru-ru-x-dfc#female_3-local","ru-ru-x-dfc#male_2-local","ru-ru-x-dfc#male_1-local",
+        "ru-ru-x-dfc-local","ru-ru-x-dfc#female_1-local","ru-ru-x-dfc#female_2-local","ru-RU-language",
+                "ru-ru-x-dfc-network","ru-ru-x-dfc#male_3-local"};
+
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+//            for (Voice tmpVoice : textToSpeech.getVoices()) {
+//                 if (tmpVoice.getName().contains(ruVoice[1])) {
+//                     Logger.d(LogType.Tester, "find voice ");
+//                     textToSpeech.setVoice(tmpVoice);
+//                     break;
+//                 }}
+//            Logger.d(LogType.Tester, textToSpeech.getVoice().getName());
+//        }
+
+
     }
 
     private void onComplete() {
 
-        state = State.ENDED;
+       if(!isFlip) state = State.ENDED;
         try {
-            Thread.sleep(1000);
+            Thread.sleep(currentSleep);
         } catch (InterruptedException e) {
 
         }
-        callbacks.onEnded();
+        callbacks.onEnded(isFlip);
+        isFlip=false;
     }
 
 
@@ -220,15 +259,18 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     @Override
     public void onStart(String s) {
         Logger.d(LogType.Player, "TTS play %s", s);
+        isFlip=false;
         switch (s) {
-            case typePlayTrack:
+            case typePlayPreambula:
+                mHandler.removeCallbacks(timer);
+                break;
+            default:
                 state = State.PLAYING;
                 timeStartPlay = System.currentTimeMillis();
                 mHandler.removeCallbacks(timer);
                 mHandler.postDelayed(timer, 1);
                 break;
-            case typePlayPreambula:
-                break;
+
         }
 
     }
@@ -236,9 +278,10 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     @Override
     public void onDone(String s) {
         Logger.d(LogType.Player, "tts finish %s", s);
-        if(state == State.PAUSED || state==State.IDLE) return;
-        switch (s) {
+       switch (s) {
             case typePlayTrack:
+                if(state == State.PAUSED || state==State.IDLE) return;
+                if(progress/1000<minDuration && isFlip){ isFlip=false;return;}
                 onComplete();
                 break;
             case typePlayPreambula:
