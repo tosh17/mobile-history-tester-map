@@ -40,8 +40,12 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
 import ru.mhistory.R;
+import ru.mhistory.bus.BusProvider;
+import ru.mhistory.bus.event.AppPrepareBDCompleteEvent;
 import ru.mhistory.common.util.PermissionUtils;
+import ru.mhistory.fileservice.FileService;
 import ru.mhistory.playback.AudioService;
+import ru.mhistory.realm.RealmFactory;
 import ru.mhistory.screen.map.MapPresenter;
 
 public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarChangeListener {
@@ -177,6 +181,11 @@ public class PlayerMenuFragment extends Fragment implements SeekBar.OnSeekBarCha
         presenter.attach(this);
         getActivity().startService(new Intent(getActivity(), AudioService.class)
                 .setAction(AudioService.Action.INIT));
+        if (!RealmFactory.getInstance(getContext()).isCreate()) {
+            Intent intent = new Intent(getContext(), FileService.class).setAction(FileService.Action.LOAD_ALL_BD);
+            getActivity().startService(intent);
+        } else
+            BusProvider.getInstance().post(new AppPrepareBDCompleteEvent());
     }
 
     @Override

@@ -80,8 +80,7 @@ public class PoiSearch {
         for (Poi poi : pois) {
             PoiInfo poiInfo = getPoiInfo(current.latitude, current.longitude, poi.latitude, poi.longitude);
             float poiFromMoveAngle = conf.movementAngle - poiInfo.angle;
-            if(poi.objId==29) Logger.d(LogType.Tester,"  dist"+poiInfo.distanceTo+"  angle"+poiFromMoveAngle+"  "+current.latitude+" "+ current.longitude+" "+ poi.latitude+" "+ poi.longitude);
-            //Todo после выбора алгоритма оптимизмровать поиск
+           //Todo после выбора алгоритма оптимизмровать поиск
             if (poiInfo.distanceTo <= conf.radiusStay) {
                 poiResult.stay.put(poiInfo, poi);
             }

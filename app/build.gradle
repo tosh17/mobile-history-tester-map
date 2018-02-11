@@ -27,8 +27,8 @@ ext {
     _minSdkVersion = 16
     _targetSdkVersion = 25
     _buildToolsVersion = '24.0.2'
-    _versionName = '1.0.044'
-    _versionCode = 17
+    _versionName = '1.0.099'
+    _versionCode = 18
     _supportLibVersion = '26.1.0'
     _gmsVersion = '10.2.1'
     _mapsUtils = '0.5'

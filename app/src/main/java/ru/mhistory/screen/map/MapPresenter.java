@@ -23,6 +23,7 @@ import api.vo.PoiContent;
 import api.vo.PoiInfo;
 import ru.mhistory.bus.BusProvider;
 import ru.mhistory.bus.event.AppPrepareBDCompleteEvent;
+import ru.mhistory.bus.event.AppPrepareMapReadyCompleteEvent;
 import ru.mhistory.bus.event.AppPrepareTTSCompleteEvent;
 import ru.mhistory.bus.event.CanPauseEvent;
 import ru.mhistory.bus.event.CanPlayEvent;
@@ -44,6 +45,7 @@ import ru.mhistory.bus.event.TrackProgressEvent;
 import ru.mhistory.common.util.PermissionUtils;
 import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.common.util.TimeUtil;
+import ru.mhistory.geo.DummyLocationTracker;
 import ru.mhistory.geo.GoogleApiLocationTracker;
 import ru.mhistory.geo.LatLng;
 import ru.mhistory.geo.LocationTracker;
@@ -58,19 +60,6 @@ import ru.mhistory.realm.RealmFactory;
 import ru.mhistory.screen.main.ui.PlayerMenuFragment;
 
 public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
-//    private static final int MIN_LOCATION_UPDATE_INTERVAL_SEC = 1;
-//    private static final int MAX_LOCATION_UPDATE_INTERVAL_SEC = 300;
-//    private static final int MIN_POI_MIN_RADIUS_M = 100;
-//    private static final int MAX_POI_MIN_RADIUS_M = 5000;
-//    private static final int POI_MIN_RADIUS_STEP_M = 100;
-//    private static final int MIN_POI_MAX_RADIUS_M = 10_000;
-//    private static final int MAX_POI_MAX_RADIUS_M = 100_000;
-//    private static final int POI_MAX_RADIUS_STEP_M = 10_000;
-
-//    private static final String[] poiMinRadiusValues = buildPoiRadiusValues(
-//            MIN_POI_MIN_RADIUS_M, MAX_POI_MIN_RADIUS_M, POI_MIN_RADIUS_STEP_M);
-//    private static final String[] poiMaxRadiusValues = buildPoiRadiusValues(
-//            MIN_POI_MAX_RADIUS_M, MAX_POI_MAX_RADIUS_M, POI_MAX_RADIUS_STEP_M);
 
     private Set<Poi> fullListPoi = new HashSet<>(); //полный лист
     private Set<Poi> playingListPoi = new HashSet<>(); //лист точек которые хоть раз играли
@@ -83,6 +72,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     private final LocationTracker locationTracker;
     private LatLng currentLatLng;  // текущее положение
+    private LatLng FirstLatLng;
     private long lastTimeStamp = 0; // последняя временная метка
     private SearchConf conf;
     private boolean isTracing = false; //поигрешность на скачки трекера
@@ -95,31 +85,18 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     private boolean startTrackingIsBdComplite = false;
     private boolean startTrackingIsTTSDone = false;
+    private boolean startTrackingIsMapDone = false;
 
     //temp
     public double maxDistance = 0;
     String tempStr = "";
-    // private final FilePoiProvider poiProvider;
-    // private final PoiProviderConfig poiProviderConfig;
     private PlayerMenuFragment fragment;
-
-
-    @NonNull
-    private static String[] buildPoiRadiusValues(int min, int max, int step) {
-        int count = max / step;
-        String[] values = new String[count];
-        for (int i = 0; i < count; i++) {
-            values[i] = String.valueOf(min + i * step);
-        }
-        return values;
-    }
 
     public MapPresenter(@NonNull Context context, @NonNull PermissionUtils.Requester requester) {
         this.locationTracker = new GoogleApiLocationTracker(context, requester);
-        //  this.locationTracker = new DummyLocationTracker();
+        //this.locationTracker = new DummyLocationTracker();
         locationTracker.setLocationUpdateCallbacks(this);
         conf = SearchConf.getSearchPoiConf(context);
-        setSearchingRadius(conf.radiusStay);
         locationTracker.setLocationUpdateIntervalMs(conf.searchTimeUpdate * 1000);
         avgangle = new AngleAvgLatLng(conf.angleAvgCount);
 
@@ -164,62 +141,6 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         locationTracker.resetTracking();
     }
 
-//    @UiThread
-//    public void onLocationUpdateIntervalClicked() {
-//        NumberPickerDialog dialog = new NumberPickerDialog(
-//                fragment.getContext(),
-//                number -> {
-//                    Logger.d(String.format("Location update interval changed to (%s) sec", number));
-//                    locationTracker.setLocationUpdateIntervalMs(number * 1000);
-//                    fragment.setLocationUpdateIntervalSec(number);
-//                },
-//                locationTracker.getLocationUpdateIntervalMs() / 1000,
-//                MIN_LOCATION_UPDATE_INTERVAL_SEC,
-//                MAX_LOCATION_UPDATE_INTERVAL_SEC,
-//                R.string.update_interval_min
-//        );
-//        dialog.show();
-//    }
-
-//    @UiThread
-//    public void onPoiMinRadiusClicked() {
-//        NumberPickerDialog dialog = new NumberPickerDialog(
-//                fragment.getContext(),
-//                number -> {
-//                    int radius = number * POI_MIN_RADIUS_STEP_M;
-//                    Logger.d(String.format("Poi MIN radius changed to (%s) meters", radius));
-//                    poiProviderConfig.setMinRadiusInMeters(radius);
-//                    fragment.setPoiMinRadius(radius);
-//                },
-//                poiProviderConfig.getMinRadiusInMeters() / POI_MIN_RADIUS_STEP_M,
-//                1,
-//                MAX_POI_MIN_RADIUS_M / POI_MIN_RADIUS_STEP_M,
-//                R.string.choose_poi_min_radius
-//        );
-//        dialog.setDisplayedValues(poiMinRadiusValues);
-//        dialog.show();
-//    }
-
-//    @UiThread
-//    public void onPoiMaxRadiusClicked() {
-//        NumberPickerDialog dialog = new NumberPickerDialog(
-//                fragment.getContext(),
-//                number -> {
-//                    int radius = number * POI_MAX_RADIUS_STEP_M;
-//                    Logger.d(String.format("Poi MAX radius changed to (%s) meters", radius));
-//                    poiProviderConfig.setMaxRadiusInMeters(radius);
-//                    fragment.setPoiMaxRadius(radius);
-//                    BusProvider.getInstance().post(new SetMaxPoiRadiusEvent(radius));
-//                },
-//                poiProviderConfig.getMaxRadiusInMeters() / POI_MAX_RADIUS_STEP_M,
-//                1,
-//                MAX_POI_MAX_RADIUS_M / POI_MAX_RADIUS_STEP_M,
-//                R.string.choose_poi_max_radius
-//        );
-//        dialog.setDisplayedValues(poiMaxRadiusValues);
-//        dialog.show();
-//    }
-
     @WorkerThread
     @Override
     public void onLocationChanged(@NonNull final LatLng latLng, long time) {
@@ -241,40 +162,51 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         currentLatLng = latLng;
         lastTimeStamp = time;
         if (!isStateTracing) return;
+        if (isPlayerBlock) return;
         if (isStay) {  //Вывод в шторку максимального перемещения для режима стоим
             maxDistance = Math.max(result[0], maxDistance);
             ThreadUtil.runOnUiThread(() -> fragment.setTest(tempStr));
         }
         if (!isTracing) {//todo добавить загрузку нового квадрата  и разбить по квадратам
-            android.util.Pair<LatLng, LatLng> square = PoiSearch.getSquare(latLng, conf.searchSquare);
-            RealmFactory factory = RealmFactory.getInstance(fragment.getActivity().getApplicationContext());
-            fullListPoi = factory.findSquare(square);
-            for (Poi p : fullListPoi) if (!p.isPoiComplete()) listPoi.add(p);
-
-            Map<LatLng, Poi> cache = new HashMap<>();
-            for (Poi p : fullListPoi) cache.put(new LatLng(p.latitude, p.longitude), p);
-            ThreadUtil.runOnUiThread(() ->
-                    BusProvider.getInstance().post(new PoiCacheAvailableEvent(cache)));
-            isTracing = true;
-            notifyUiOnLocationChanged(latLng);
-        }
-
-        if (isStay && result[0] < conf.deltaDistanceToTracking) {
-            if (conf.isStayPlay) nextPoiFind(latLng);
-            return;
+            firstTracking(latLng);
         }
         if (isStay) {
-            isStay = false;
-            setSearchingRadius(conf.radiusZone3);
-            Logger.d(LogType.Location, "Начало движения");
+            float[] tempResult = new float[2];
+            Location.distanceBetween(FirstLatLng.latitude, FirstLatLng.longitude,
+                    latLng.latitude, latLng.longitude,
+                    tempResult);
+            if (tempResult[0] < conf.deltaDistanceToTracking) {
+                if (conf.isStayPlay) nextPoiFind(latLng);
+                return;
+            } else {
+                isStay = false;
+                setSearchingRadius(conf.radiusZone3);
+                Logger.d(LogType.Location, "Начало движения");
+            }
         }
-
         Logger.d(LogType.Location, "onLocationChanged " + "lat=" + latLng.latitude + ":lng" + latLng.longitude
                 + " distance" + result[0] + "; angle=" + result[1]);
 
 
         notifyUiOnLocationChanged(latLng);
         nextPoiFind(latLng);
+    }
+
+    private void firstTracking(LatLng latLng) {
+        FirstLatLng=latLng;
+        InitStatus.send(InitStatus.BdLoadStart);
+        android.util.Pair<LatLng, LatLng> square = PoiSearch.getSquare(latLng, conf.searchSquare);
+        RealmFactory factory = RealmFactory.getInstance(fragment.getActivity().getApplicationContext());
+        fullListPoi = factory.findSquare(square);
+        for (Poi p : fullListPoi) if (!p.isPoiComplete()) listPoi.add(p);
+        Map<LatLng, Poi> cache = new HashMap<>();
+        InitStatus.send(InitStatus.BdLoadStop);
+        for (Poi p : fullListPoi) cache.put(new LatLng(p.latitude, p.longitude), p);
+        ThreadUtil.runOnUiThread(() ->
+                BusProvider.getInstance().post(new PoiCacheAvailableEvent(cache)));
+        isTracing = true;
+        notifyUiOnLocationChanged(latLng);
+        setSearchingRadius(conf.radiusStay);
     }
 
     private void marker(LatLng latLng) {
@@ -362,6 +294,13 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
         startTracking();
     }
 
+    @Subscribe
+    public void mapReadyCompleteEvent(@NonNull AppPrepareMapReadyCompleteEvent event) {
+        Logger.d(LogType.App, "MapPresenter MapReady Complete ok");
+        startTrackingIsMapDone = true;
+        startTracking();
+    }
+
     @UiThread
     private void updateUiWithPoi(@NonNull Poi poi,
                                  @NonNull PoiInfo poiInfo) {
@@ -380,7 +319,8 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     @UiThread
     public void startTracking() {
-        if (!startTrackingIsBdComplite || !startTrackingIsTTSDone) return;
+        if (!startTrackingIsBdComplite || !startTrackingIsTTSDone || !startTrackingIsMapDone)
+            return;
         Logger.d("Start tracking locations...");
         Logger.d(LogType.Tester, "Start");
         isStateTracing = true;
@@ -415,6 +355,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     @UiThread
     public void playOrPauseTrack() {
+
         Context ctx = fragment.getActivity();
         ctx.startService(new Intent(ctx, AudioService.class)
                 .setAction(AudioService.Action.PLAY_OR_PAUSE));
@@ -429,7 +370,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
 
     @UiThread
     public void playNextTrack() {
-
+        if (currentPlayingPoi == null) return;
         currentPlayingPoi.second.setFlip(true);
         String url = currentPlayingPoi.second.getNextFlipContent().getDefaultUrl();
         checkPrev(currentPlayingPoi.second.isHasPrevFlipContent());
@@ -458,7 +399,10 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             Toast.makeText(fragment.getContext(), "В данной зоне нет точек", Toast.LENGTH_SHORT);
             return;
         }
-        if (currentPlayingPoi.second != null) changePoiStatus(currentPlayingPoi.second);
+        if (currentPlayingPoi.second != null) {
+            changePoiStatus(currentPlayingPoi.second, currentPlayingPoi.second.poiActiveStatus());
+            currentPlayingPoi.second.status = currentPlayingPoi.second.poiActiveStatus();
+        }
         if (pois != null) {
             lastListingPoiUrl = currentPlayingPoiUrl;
             currentPlayingPoiUrl = pois.second.getNextContent().getDefaultUrl();
@@ -571,6 +515,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             changePoiStatus(poi, 3);
             return;
         }
+        isPlayerBlock = true;
         String audioUrlToPlay = null;
         long idUrlToPlay = 0;
         PoiContent.AudioType audioTypeToPlay = null;
@@ -592,7 +537,7 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
             preambula = Preambula.get(poiInfo.distanceTo, conf.movementAngle - poiInfo.angle, conf) + ", " + poi.name;
         }
 
-        isPlayerBlock = true;
+
         switch (audioTypeToPlay) {
             case MP3:
                 ctx.startService(new Intent(ctx, AudioService.class)
@@ -629,7 +574,10 @@ public class MapPresenter implements LocationTracker.LocationUpdateCallbacks {
     }
 
     private void changePoiStatus(Poi poi) {
-        changePoiStatus(poi, poi.poiActiveStatus());
+        if (poi.status != poi.poiActiveStatus()) {
+            changePoiStatus(poi, poi.poiActiveStatus());
+            poi.status = poi.poiActiveStatus();
+        }
     }
 
 

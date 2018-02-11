@@ -6,9 +6,10 @@
     <string name="map_init_state_zip_start">Распаковка пакета</string>
     <string name="map_init_state_zip_stop">Распаковка пакета завершена</string>
     <string name="map_init_state_json_start">Подготовка базы</string>
-    <string name="map_init_state_json_stop">База подготовленна</string>
+    <string name="map_init_state_json_stop">База подготовлена</string>
     <string name="map_init_state_bd_start">Запись в Базу Данных</string>
     <string name="map_init_state_bd_stop">Запись завершена</string>
-
+    <string name="map_init_state_bd_load_start">Поиск в Базе Данных</string>
+    <string name="map_init_state_bd_load_stop">Поиск завершен</string>
 
 </resources>

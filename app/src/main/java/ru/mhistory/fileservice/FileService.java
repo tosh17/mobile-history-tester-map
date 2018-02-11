@@ -50,8 +50,8 @@ public class FileService extends Service {
         switch(action){
             case LOAD_ALL_BD:
                 InitStatus.send(InitStatus.FileLoadStart);
-       //         loadBD("allpois");
-                loadBD("34pois");
+             loadBD("allpois");
+           //  loadBD("34pois");
                 break;
         }
         return START_NOT_STICKY;

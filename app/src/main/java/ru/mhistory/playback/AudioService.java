@@ -33,13 +33,16 @@ import ru.mhistory.log.LogType;
 import ru.mhistory.log.Logger;
 
 public class AudioService extends Service implements AudioPlayer.Callbacks, AudioPlayer.PreambulaCallback, AudioFocusable {
+
     private boolean isDebug = false;
     public static final String KEY_AUDIO_ID = "CONTENT_ID";
     public static final String KEY_AUDIO_URL = "AUDIO_URL";
+    public static final String KEY_AUDIO_TRACK_NAME ="TRACK_NAME" ;
     public static final String KEY_IS_PREAMBULA = "IS_PREAMBULA";
     public static final String KEY_PREAMBULA = "PREAMBULA";
     public static final String KEY_AUDIO_POSITION = "AUDIO_POSITION";
     private static final int NOTIFICATION_ID = 1;
+
 
     @IntDef({
             AudioFocus.NO_FOCUS_NO_DUCK,
@@ -92,6 +95,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     private int audioFocus;
     private File externalRootDir;
     private String currentAudioTrackUrl;
+    private String currentAutioTrackName;
     private long currentAudioContentId;
     private boolean isCurrentFlip;
     private String AfterPreambule;
@@ -175,11 +179,13 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 break;
             case Action.NEXT:
                 currentAudioTrackUrl = intent.getExtras().getString(KEY_AUDIO_URL);
+                currentAutioTrackName= intent.getExtras().getString(KEY_AUDIO_TRACK_NAME);
                 onNextAction(currentAudioTrackUrl);
                 break;
             case Action.URL:
                 String url = intent.getExtras().getString(KEY_AUDIO_URL);
                 currentAudioContentId = intent.getExtras().getLong(KEY_AUDIO_ID);
+                currentAutioTrackName= intent.getExtras().getString(KEY_AUDIO_TRACK_NAME);
                 Logger.d(LogType.Player, "intent to mp3-> " + url);
                 if (!TextUtils.isEmpty(url)) {
                     ttsPlayer.block(true);
@@ -191,6 +197,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
                 break;
             case Action.TEXT:
                 String text = intent.getExtras().getString(KEY_AUDIO_URL);
+                currentAutioTrackName= intent.getExtras().getString(KEY_AUDIO_TRACK_NAME);
                 currentAudioContentId = intent.getExtras().getLong(KEY_AUDIO_ID);
                 Logger.d(LogType.Player, "intent to tts-> " + text);
                 if (!TextUtils.isEmpty(text)) {
@@ -375,6 +382,20 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
     }
 
     private void configAndStartMediaPlayer() {
+        if(getNotBlockPlayer()==ttsPlayer){
+            if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PLAYING) {
+                getNotBlockPlayer().pause();
+                sendCanPlayEvent();
+                return;
+            }
+            if (getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.READY
+                    || getNotBlockPlayer().getPlaybackState() == AudioPlayer.State.PAUSED) {
+                startAudioTrackProgress();
+                getNotBlockPlayer().play();
+                sendCanPauseEvent();
+            }
+            return;
+        }
         if (audioFocus == AudioFocus.NO_FOCUS_NO_DUCK) {
             // If we don't have audio focus and can't duck, we have to pause, even if mState
             // is State.Playing. But we stay in the Playing state so that we know we have to resume
@@ -462,7 +483,7 @@ public class AudioService extends Service implements AudioPlayer.Callbacks, Audi
 
     private void sendNextTrackInfoEvent() {
         ThreadUtil.runOnUiThread(() -> {
-            BusProvider.getInstance().post(new NextTrackInfoEvent(currentAudioTrackUrl,
+            BusProvider.getInstance().post(new NextTrackInfoEvent(currentAutioTrackName,currentAudioTrackUrl,
                     getNotBlockPlayer().getDuration(), 1, 1));
         });
 

@@ -3,6 +3,7 @@ package ru.mhistory.screen.map;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
@@ -11,6 +12,7 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -54,7 +56,7 @@ import ru.mhistory.BuildConfig;
 import ru.mhistory.Prefs;
 import ru.mhistory.R;
 import ru.mhistory.bus.BusProvider;
-import ru.mhistory.bus.event.AppPrepareBDCompleteEvent;
+import ru.mhistory.bus.event.AppPrepareMapReadyCompleteEvent;
 import ru.mhistory.bus.event.CanPauseEvent;
 import ru.mhistory.bus.event.CanPlayEvent;
 import ru.mhistory.bus.event.InitStatus;
@@ -76,7 +78,6 @@ import ru.mhistory.common.util.AppLaunchChecker;
 import ru.mhistory.common.util.PermissionUtils;
 import ru.mhistory.common.util.ThreadUtil;
 import ru.mhistory.common.util.UiUtil;
-import ru.mhistory.fileservice.FileService;
 import ru.mhistory.geo.LocationAccuracy;
 import ru.mhistory.geo.LocationRequestDefaults;
 import ru.mhistory.log.LogType;
@@ -139,6 +140,7 @@ public class MapActivity
     private boolean isCompass = true;
     private float currentBearing = 0;
     private android.widget.Toast toast;
+    private PowerManager.WakeLock wl;
 
     @SuppressWarnings("ConstantConditions")
     @Override
@@ -165,7 +167,9 @@ public class MapActivity
                 .build();
         //todo locationRequestHighAccuracy
         locationRequestHighAccuracy = LocationRequestDefaults.get(LocationAccuracy.MEDIUM);
-
+        
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "DoNjfdhotDimScreen");
         toInitService();
     }
 
@@ -188,6 +192,7 @@ public class MapActivity
     protected void onResume() {
         super.onResume();
         mapView.onResume();
+        wl.acquire();
         if (isLocationPermissionGranted() && locationSettingsGoodEnough) {
             startLocationUpdatesIfConnected();
         }
@@ -197,6 +202,7 @@ public class MapActivity
     protected void onPause() {
         super.onPause();
         mapView.onPause();
+        wl.release();
         //todo Listener
         //  stopLocationUpdatesIfConnected();
     }
@@ -337,6 +343,7 @@ public class MapActivity
         mapView.setShowPoi(showPoi);
         mapView.setShowSearchingRadius(showSearchingRadius);
         mapView.setSearchingRadius(new PoiProviderConfig().getMaxRadiusInMeters());
+        ThreadUtil.runOnUiThread(() -> BusProvider.getInstance().post(new AppPrepareMapReadyCompleteEvent()));
     }
 
     private boolean checkAppLaunch() {
@@ -345,14 +352,11 @@ public class MapActivity
         switch (appLaunch) {
             case AppLaunchChecker.FIRST_TIME:
                 //Todo Сделать диалог с переходом на страницу занрузки
-                Intent intent=new Intent(this,FileService.class).setAction(FileService.Action.LOAD_ALL_BD);
-                startService(intent);
             case AppLaunchChecker.FIRST_TIME_VERSION:
                 prefs.putInt(Prefs.KEY_LAST_SEEN_VERSION, BuildConfig.VERSION_CODE);
                 break;
             case AppLaunchChecker.REGULAR:
                 //TODO: check update
-                BusProvider.getInstance().post(new AppPrepareBDCompleteEvent());
                 break;
         }
         return appLaunch == AppLaunchChecker.FIRST_TIME;
@@ -450,6 +454,7 @@ public class MapActivity
     }
 
     private void cameraToCenter() {
+        if (googleMap == null) return;
         float currentZoom = googleMap.getCameraPosition().zoom;
         lastLatLng.ifPresent(latLng -> googleMap.animateCamera(
                 CameraUpdateFactory.newLatLngZoom(latLng, currentZoom), 250, null));
@@ -470,7 +475,7 @@ public class MapActivity
     }
 
     private void cameraToCenterMeters(int meters) {
-        float currentZoom = googleMap.getCameraPosition().zoom;
+        //    float currentZoom = googleMap.getCameraPosition().zoom;
 
 //        lastLatLng.ifPresent(latLng -> {
 //            Pair<ru.mhistory.geo.LatLng, ru.mhistory.geo.LatLng>
@@ -492,13 +497,13 @@ public class MapActivity
 //            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(SQUARE,0));
 //        });
 
-            Pair<ru.mhistory.geo.LatLng, ru.mhistory.geo.LatLng>
-                    square = PoiSearch.getSquare(mapView.myLocation, meters);
-            LatLngBounds SQUARE = new LatLngBounds(
-                    square.first.toGoogle(), square.second.toGoogle());
-            // Creates a CameraPosition from the builder
-            googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(SQUARE,0));
-
+        Pair<ru.mhistory.geo.LatLng, ru.mhistory.geo.LatLng>
+                square = PoiSearch.getSquare(mapView.myLocation, meters);
+        LatLngBounds SQUARE = new LatLngBounds(
+                square.first.toGoogle(), square.second.toGoogle());
+        // Creates a CameraPosition from the builder
+      //  googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(SQUARE, 0));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(SQUARE, 0));
     }
 
     private void cameraToLatLng(@NonNull LatLng latLng) {
@@ -520,15 +525,19 @@ public class MapActivity
 
     @Override
     public void onLocationChanged(@NonNull Location location) {
-        Logger.d(LogType.Location, "Map   " + location.toString());
-       // updateMyLocation(location);
+   //     Logger.d(LogType.Location, "Map   " + location.toString());
+        // updateMyLocation(location);
         // mapView.setMyLocation(location);
-     //   cameraToLatLng(new LatLng(location.getLatitude(), location.getLongitude()));
+        //   cameraToLatLng(new LatLng(location.getLatitude(), location.getLongitude()));
     }
 
     private void updateMyLocation(@NonNull Location location) {
         lastLocation = location;
         lastLatLng = Optional.of(new LatLng(location.getLatitude(), location.getLongitude()));
+    }
+
+    private void updateMyLocation(@NonNull ru.mhistory.geo.LatLng location) {
+        lastLatLng = Optional.of(new LatLng(location.latitude, location.longitude));
     }
 
     private void showPlayServicesErrorDialog(int errorCode) {
@@ -632,10 +641,12 @@ public class MapActivity
         String eventParameters = "{\"name\":\"PlayPause\", \"location\":\"map\"}";
         YandexMetrica.reportEvent("Button press", eventParameters);
     }
+
     @OnClick(R.id.mapButtonNextTrack)
     public void onBtnNextTrack() {
         BusProvider.getInstance().post(new MapButtonClick(MapButtonClick.buttonNextTrack));
     }
+
     private void setButtonNextTrackEnable(boolean enable) {
         buttonNextTrack.setEnabled(enable);
         if (!enable)
@@ -643,10 +654,12 @@ public class MapActivity
         else
             icButtonNextTrack.setColorFilter(getResources().getColor(R.color.mp_player_enable_btn), PorterDuff.Mode.SRC_ATOP);
     }
+
     @OnClick(R.id.mapButtonNextPoi)
     public void onBtnNextPoi() {
         BusProvider.getInstance().post(new MapButtonClick(MapButtonClick.buttonNextPoi));
     }
+
     @Subscribe
     public void setButtonState(@NonNull MapButtonState event) {
         setButtonNextTrackEnable(event.stare);
@@ -654,7 +667,7 @@ public class MapActivity
 
     @Subscribe
     public void infoStatus(@NonNull InitStatus event) {
-        if(event.isInit){
+        if (event.isInit) {
             mapInfoCard.setVisibility(View.GONE);
             return;
         }
@@ -664,12 +677,12 @@ public class MapActivity
 
     @Subscribe
     public void onCanPlayTrackEvent(@NonNull CanPlayEvent event) {
-        ThreadUtil.runOnUiThread(() ->imageViewPausePlay.setImageDrawable(playDrawable));
+        ThreadUtil.runOnUiThread(() -> imageViewPausePlay.setImageDrawable(playDrawable));
     }
 
     @Subscribe
-    public void onCanPauseTrackEvent(@NonNull CanPauseEvent event){
-        ThreadUtil.runOnUiThread(() ->imageViewPausePlay.setImageDrawable(pauseDrawable));
+    public void onCanPauseTrackEvent(@NonNull CanPauseEvent event) {
+        ThreadUtil.runOnUiThread(() -> imageViewPausePlay.setImageDrawable(pauseDrawable));
     }
 
     @Subscribe
@@ -677,10 +690,13 @@ public class MapActivity
 //        float currentZoom = googleMap.getCameraPosition().zoom;
 //        googleMap.animateCamera(
 //                CameraUpdateFactory.newLatLngZoom(event.location, currentZoom), 250, null));
-        currentBearing=event.angle;
-        if(!isCompass){ mapView.setMyLocation(event.location, 0); cameraToBearing(event.angle);}
-        else mapView.setMyLocation(event.location, event.angle);
-
+        currentBearing = event.angle;
+        if (!isCompass) {
+            mapView.setMyLocation(event.location, 0);
+            cameraToBearing(event.angle);
+        } else mapView.setMyLocation(event.location, event.angle);
+        updateMyLocation(event.location);
+        cameraToCenter();
     }
 
     @Subscribe
@@ -721,7 +737,7 @@ public class MapActivity
 
     @Subscribe
     public void onPoiStatusChangeEvent(@NonNull PoiStatusChangeEvent event) {
-        Logger.d("Poi found event received");
+        Logger.d(LogType.Location,event.poi.name+ "change status to "+ event.poi.status);
         mapView.onPoiChange(event.poi);
     }
 
@@ -741,7 +757,7 @@ public class MapActivity
     public void onSetPoiRadiusEvent(@NonNull SetMaxPoiRadiusEvent event) {
         Logger.d(String.format("Set poi radius event received, radius = (%s)", event.radiusMeters));
         mapView.setSearchingRadius(event.radiusMeters);
-        cameraToCenterMeters(event.radiusMeters);
+        cameraToCenterMeters((int) (1.5*event.radiusMeters));
         // googleMap.animateCamera(CameraUpdateFactory.zoomTo(getZoomLevel(event.radiusMeters*4/3)), 2000, null);
         // googleMap.animateCamera(CameraUpdateFactory.zoomTo(16), 2000, null);
     }
@@ -751,11 +767,13 @@ public class MapActivity
         mapView.onPoiReleased();
     }
 
-    public void printToast(String str){
-        if(toast==null){ toast=new Toast(this).makeText(this,str,Toast.LENGTH_SHORT);}
-        else toast.setText(str);
+    public void printToast(String str) {
+        if (toast == null) {
+            toast = new Toast(this).makeText(this, str, Toast.LENGTH_SHORT);
+        } else toast.setText(str);
         toast.show();
     }
+
     public static class PlayServicesErrorDialogFragment extends DialogFragment {
         private static final String ARG_PLAY_SERVICES_ERROR = "playServicesError";
 

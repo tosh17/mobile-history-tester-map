@@ -18,6 +18,8 @@ public class InitStatus {
     public static int JsonStop = 7;
     public static int BdStart = 8;
     public static int BdStop = 9;
+    public static int BdLoadStart = 10;
+    public static int BdLoadStop = 11;
     public static int Finish = 50;
 
     public int resId;
@@ -30,7 +32,7 @@ public class InitStatus {
 
     public InitStatus(int res, int p) {
         resId = getRes(res);
-        progress += p * 65 / 100;
+        progress += p * 55 / 100;
     }
 
     private int getRes(int res) {
@@ -48,20 +50,26 @@ public class InitStatus {
                 progress = 20;
                 return R.string.map_init_state_zip_start;
             case 5:
-                progress = 25;
+                progress = 24;
                 return R.string.map_init_state_zip_stop;
             case 6:
                 progress = 25;
                 return R.string.map_init_state_json_start;
             case 7:
-                progress = 90;
+                progress = 79;
                 return R.string.map_init_state_json_stop;
             case 8:
-                progress = 90;
+                progress = 80;
                 return R.string.map_init_state_bd_start;
             case 9:
-                progress = 95;
+                progress = 89;
                 return R.string.map_init_state_bd_stop;
+            case 10:
+                progress = 94;
+                return R.string.map_init_state_bd_load_start;
+            case 11:
+                progress = 99;
+                return R.string.map_init_state_bd_load_stop;
             case 50:
                 progress = 100;
                 isInit = true;

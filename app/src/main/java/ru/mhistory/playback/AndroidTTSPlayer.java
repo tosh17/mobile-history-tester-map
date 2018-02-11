@@ -5,7 +5,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import android.speech.tts.Voice;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -94,8 +93,8 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     public void play() {
         checkState(State.READY, State.PAUSED);
         Logger.d(LogType.Player, "play tts to " + strTTS);
-        if(state == State.READY)toPlay(strTTS);
-        else toPosition((int) (100*progress/getDuration()));
+        if(state == State.PAUSED)toPosition((int) (100*progress/getDuration()));
+        else toPlay(strTTS);
 
     }
 
@@ -235,11 +234,11 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
     private void onComplete() {
 
        if(!isFlip) state = State.ENDED;
-        try {
-            Thread.sleep(currentSleep);
-        } catch (InterruptedException e) {
-
-        }
+//        try {
+//            Thread.sleep(currentSleep);
+//        } catch (InterruptedException e) {
+//
+//        }
         callbacks.onEnded(isFlip);
         isFlip=false;
     }
@@ -280,7 +279,7 @@ public class AndroidTTSPlayer extends UtteranceProgressListener implements Audio
         Logger.d(LogType.Player, "tts finish %s", s);
        switch (s) {
             case typePlayTrack:
-                if(state == State.PAUSED || state==State.IDLE) return;
+                if(state == State.PAUSED || state== State.IDLE) return;
                 if(progress/1000<minDuration && isFlip){ isFlip=false;return;}
                 onComplete();
                 break;

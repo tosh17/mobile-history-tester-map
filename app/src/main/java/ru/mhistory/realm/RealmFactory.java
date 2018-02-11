@@ -130,4 +130,11 @@ public class RealmFactory {
         Logger.d(LogType.Realm,"History save");
         realm.close();
     }
+
+    public boolean isCreate() {
+        Realm realm = Realm.getInstance(configPoi);
+        PoiRealm point = realm.where(PoiRealm.class)
+                .findFirst();
+        return point!=null;
+    }
 }
